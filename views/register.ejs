@@ -1,0 +1,23 @@
+
+<%- include('head', { title: 'Make an Account' }) -%>
+
+<h1>Make an Account</h1>
+<%- message %>
+<a href="/restricted">로그인 확인</a><br>
+<form method="post" action="/register">
+  <p>
+    <label for="nusername">New Username:</label>
+    <input type="text" name="nusername" id="nusername">
+  </p>
+  <p>
+    <label for="npassword">New Password:</label>
+    <input type="text" name="npassword" id="npassword">
+  </p>
+  <p>
+    <input type="submit" value="Submit">
+  </p>
+</form>
+
+
+
+<%- include('foot') -%>

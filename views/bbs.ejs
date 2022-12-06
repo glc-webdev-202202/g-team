@@ -1,0 +1,15 @@
+
+<%- include('head', { title: 'BBS Example' }) -%>
+
+<h1>게시판</h1>
+<% for(var article of list){ %> 
+    <b><%= article.title %></b> <%= article.contents %> <i><%= article.name %> </i><br>
+<% } %>
+
+<form action="/write" method="POST">  <%# /write redirects to index.ts initializeRoutes() where /write connects to function writeBbs #%>
+    <input type="text" name = "title">
+    <input type="text" name = "contents">
+    <button type="submit">submit</button>
+</form>
+
+<%- include('foot') -%> 
