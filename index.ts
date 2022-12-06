@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from 'express';
 import session from 'express-session';
 import path from 'path';
 
-const sqlite = require('sqlite3').verbose();
+const sqlite = require('sqlite3').verbose(); //이 명령문이 있어야 sqlite3를 사용할 수 있음 
 
 class Article{
     public name: string;
