@@ -95,7 +95,7 @@ function index(req: Request, res: Response, next: NextFunction): void {
     }
 };
 
-class AuthRepository { //console.log로 
+class AuthRepository { //console.log로 확인
     private db = new sqlite.Database(path.join(__dirname, "user.db"));
 
     constructor(){
@@ -118,6 +118,18 @@ class AuthRepository { //console.log로
         })
     }
     //private db 때문에 여기에 ADD USER 
+    public registerUser(req: Request, res: Response, next: NextFunction) { //this is for making a new account where new username and password are pushed into the users array
+        try {
+            if (!req.session.user){ //로그인이 안되어있으면 
+                // user.push({name: req.body.nusername, password: req.body.npassword}); // <-- 이 부분을 SQL로 회원가입 정보 입력 
+                res.redirect('/login');
+            } else { //로그인 되어있으면 기본 창으로 
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 class AuthService{
@@ -132,104 +144,103 @@ class AuthService{
     }
 }
 
-function register(req: Request, res: Response, next: NextFunction): void { //get request을 통해서 회원가입 페이지 불러오기?
-    try {
-        res.render('register'); //register.ejs로 이동?
-    } catch (error) {
-        next(error);
-    }
-};
+class AuthController {
+    public authService = new AuthService();
 
-function registerUser(req: Request, res: Response, next: NextFunction) { //this is for making a new account where new username and password are pushed into the users array
-    try {
-        if (!req.session.user){ //로그인이 안되어있으면 
-            // user.push({name: req.body.nusername, password: req.body.npassword}); // <-- 이 부분을 SQL로 회원가입 정보 입력 
+    public index = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try{
             res.redirect('/login');
-        } else { //로그인 되어있으면 기본 창으로 
-            res.redirect('/login');
+        } catch (error) {
+            next(error);
         }
-    } catch (error) {
-        next(error);
-    }
-}
+    };
 
-function signUp(req: Request, res: Response, next: NextFunction): void { 
-    try {
-        res.render('login', { loggedin: req.session.user });
-    } catch (error) {
-        next(error);
-    }
-};
+    public signUp = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            res.render('login', {loggedin: req.session.user});
+        } catch(error){
+            next(error);
+        }
+    };
 
-function logIn(req: Request, res: Response, next: NextFunction): void {
-    try {
-        authenticate(req.body.username, req.body.password, function (user) {
-            if (user) {
-                req.session.regenerate(function () {
-                    req.session.user = user;
-                    req.session.success = 'username: ' + user.name;
-                    res.redirect('back');
-                });
+    public logIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            await this.authService.authenticate(req.body.username, req.body.password, function (user) {
+                if (user) {
+                    req.session.regenerate(function () {
+                        req.session.user = user;
+                        req.session.success = 'username: ' + user.name;
+                        res.redirect('back');
+                    });
+                } else {
+                    req.session.error = '비밀번호가 틀렸습니다. '
+                        + ' (use "tj" and "foobar")';
+                    res.redirect('/');
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public logOut = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            req.session.destroy(function () {
+                res.redirect('/');
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public restricted = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (req.session.user) {
+                res.render("restricted");
             } else {
-                req.session.error = '비밀번호가 틀렸습니다. '
-                    + ' (use "tj" and "foobar")';
+                req.session.error = '접근 금지!';
                 res.redirect('/');
             }
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-function logOut(req: Request, res: Response, next: NextFunction): void {
-    try {
-        req.session.destroy(function () {
-            res.redirect('/');
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-
-function myPosts(req: Request, res: Response, next: NextFunction): void {
-    try {
-        if (!req.session.user){
-            res.redirect("login");
-        } else {
-            var myPosts = bbs.filter(function (post) {
-                return post.name === req.session.user?.name;
-            });
-            res.render('myposts', {
-                list: myPosts,
-                loggedin: req.session.user
-            }); 
+    
+        } catch (error) {
+            next(error);
         }
-    } catch (error) {
-        next(error);
-    }
-};
+    };
 
-function restricted(req: Request, res: Response, next: NextFunction): void {
-    try {
-        if (req.session.user) {
-            res.render("restricted");
-        } else {
-            req.session.error = '접근 금지!';
-            res.redirect('/');
+    public register = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //get request을 통해서 회원가입 페이지 불러오기?
+        try {
+            res.render('register'); //register.ejs로 이동?
+        } catch (error) {
+            next(error);
         }
+    };
 
-    } catch (error) {
-        next(error);
-    }
-};
+    public myPosts = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (!req.session.user){
+                res.redirect("login");
+            } else {
+                var myPosts = bbs.filter(function (post) {
+                    return post.name === req.session.user?.name;
+                });
+                res.render('myposts', {
+                    list: myPosts,
+                    loggedin: req.session.user
+                }); 
+            }
+        } catch (error) {
+            next(error);
+        }
+    };
+}
 
 class App {
     public app: express.Application;
-
+    public authController;
 
     constructor() {
         this.app = express();
+        this.authController = new AuthController();
         this.initializeMiddlewares();
         this.initializeRoutes();
     }
@@ -261,15 +272,15 @@ class App {
 
     private initializeRoutes() {
         this.app.get('/', index);
-        this.app.get('/login', signUp);
-        this.app.post('/login', logIn);
-        this.app.get('/restricted', restricted);
-        this.app.get('/logout', logOut);
+        this.app.get('/login', this.authController.signUp);
+        this.app.post('/login', this.authController.logIn);
+        this.app.get('/restricted', this.authController.restricted);
+        this.app.get('/logout', this.authController.logOut);
         this.app.get('/bbs', listBbs);
         this.app.post('/write', writeBbs); 
-        this.app.get('/register', register);
-        this.app.post('/register', registerUser);
-        this.app.get('/myPosts', myPosts);
+        this.app.get('/register', this.authController.register);
+        // this.app.post('/register', this.authController.registerUser);
+        this.app.get('/myPosts', this.authController.myPosts);
     }
 }
 
