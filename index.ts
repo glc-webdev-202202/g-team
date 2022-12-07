@@ -39,7 +39,7 @@ function writeBbs(req: Request, res: Response, next: NextFunction) {
             res.redirect("login"); 
         } else {
             bbs.push({name: req.session.user.name, title: req.body.title, contents: req.body.contents});
-            res.redirect("/bbs");  
+            res.redirect("/forum");  
         }
     }
     catch (error){
@@ -274,7 +274,7 @@ class App {
         this.app.post('/login', this.authController.logIn);
         this.app.get('/restricted', this.authController.restricted);
         this.app.get('/logout', this.authController.logOut);
-        this.app.get('/bbs', listBbs);
+        this.app.get('/forum', listBbs);
         this.app.post('/write', writeBbs); 
         this.app.get('/register', this.authController.register);
         this.app.post('/register', this.authController.registerUser);
