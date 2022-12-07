@@ -18,27 +18,27 @@ class Article{
     }
 }
 
-const bbs: Article[] = [
+const forum: Article[] = [
     { name: 'tj', title: 'hello', contents: 'nice to meet you' },
     { name: 'bj', title: 'I\'m new here', contents: 'yoroshiku' },
     { name: 'tj', title: 'here again!', contents: 'anybody here?' },
     { name: 'ts', title: 'rich people', contents: 'money ain\'t an issue' },
 ];
 
-function listBbs(req: Request, res: Response, next: NextFunction): void{
+function listForum(req: Request, res: Response, next: NextFunction): void{
     try{
-        res.render('bbs', {list:bbs});
+        res.render('forum', {list:forum});
     }   catch (error){
         next(error);        
     }
 };
 
-function writeBbs(req: Request, res: Response, next: NextFunction) {
+function writeForum(req: Request, res: Response, next: NextFunction) {
     try {
         if (!req.session.user){
             res.redirect("login"); 
         } else {
-            bbs.push({name: req.session.user.name, title: req.body.title, contents: req.body.contents});
+            forum.push({name: req.session.user.name, title: req.body.title, contents: req.body.contents});
             res.redirect("/forum");  
         }
     }
@@ -55,6 +55,20 @@ class User {
     public constructor(name: string, password: string) {
         this.name = name;
         this.password = password;
+    }
+}
+
+class Stock{
+    public stock_code: string;
+    public stock_name: string;
+    public stock_price: number;
+    public stock_ud: number;
+
+    public constructor(stock_code: string, stock_name: string, stock_price: number, stock_ud: number ){
+        this.stock_code = stock_code;
+        this.stock_name = stock_name;
+        this.stock_price = stock_price;
+        this.stock_ud = stock_ud;
     }
 }
 
@@ -81,7 +95,7 @@ class AuthRepository {
 
     private createTable(): void{
         this.db.serialize(() => {
-            this.db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT)")
+            this.db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, firstname TEXT, lastname TEXT, email TEXT)")
             this.db.run("INSERT INTO users (name, password) VALUES ('tj', 'foobar')")
         })
     }
@@ -96,8 +110,17 @@ class AuthRepository {
         })
     } 
 
-    public addUser(name: string, password: string, fn: (user: User | null) => void){
-        this.db.run(`INSERT INTO users (name, password) VALUES ("${name}", "${password}")`, (err: any) => {
+    // public addUser(name: string, password: string, fn: (user: User | null) => void){
+    //     this.db.run(`INSERT INTO users (name, password) VALUES ("${name}", "${password}")`, (err: any) => {
+    //         if (err){
+    //             fn(null);
+    //         } else {
+    //             fn({"name": name, "password": password});
+    //         }
+    //     })
+    // }
+    public addUser(name: string, password: string, firstname: string, lastname: string, email: string, fn: (user: User | null) => void){
+        this.db.run(`INSERT INTO users (name, password, firstname, lastname, email) VALUES ("${name}", "${password}", "${firstname}", "${lastname}", "${email}")`, (err: any) => {
             if (err){
                 fn(null);
             } else {
@@ -131,16 +154,34 @@ class AuthController {
         }
     };
 
-    public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /register
+    // public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /register
+    //     try {
+    //         this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, function (user) {
+    //             if (user) {
+    //                 req.session.regenerate(function () {
+    //                     req.session.success = 'Welcome ' + user.name;
+    //                     res.redirect('/login');
+    //                 });
+    //             } else {
+    //                 req.session.error = 'username already taken!';
+    //                 res.redirect('back');
+    //             }
+    //         });
+    //     } catch(error){
+    //         next(error);
+    //     }
+    // };
+
+        public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /register
         try {
-            this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, function (user) {
+            this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, req.body.nfirstname, req.body.nlastname, req.body.nemail, function (user) {
                 if (user) {
                     req.session.regenerate(function () {
                         req.session.success = 'Welcome ' + user.name;
                         res.redirect('/login');
                     });
                 } else {
-                    req.session.error = 'username already taken!';
+                    req.session.error = 'Username already taken!';
                     res.redirect('back');
                 }
             });
@@ -214,7 +255,7 @@ class AuthController {
             if (!req.session.user){
                 res.redirect("login");
             } else {
-                var myPosts = bbs.filter(function (post) {
+                var myPosts = forum.filter(function (post) {
                     return post.name === req.session.user?.name;
                 });
                 res.render('myposts', {
@@ -274,11 +315,12 @@ class App {
         this.app.post('/login', this.authController.logIn);
         this.app.get('/restricted', this.authController.restricted);
         this.app.get('/logout', this.authController.logOut);
-        this.app.get('/forum', listBbs);
-        this.app.post('/write', writeBbs); 
+        this.app.get('/forum', listForum);
+        this.app.post('/write', writeForum); 
         this.app.get('/register', this.authController.register);
         this.app.post('/register', this.authController.registerUser);
         this.app.get('/myPosts', this.authController.myPosts);
+        // this.app.get('/stocklist', );
     }
 }
 
