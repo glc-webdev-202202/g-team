@@ -66,41 +66,19 @@ declare module 'express-session' {
     }
 }
 
-// const users: User[] = [
-//     { name: 'tj', password: 'foobar' },
-//     { name: 'bj', password: 'pass' },
-//     { name: 'kj', password: 'word' },
-//     { name: 'ts', password: 'ts' },
-//     { name: 'tl', password: 'tl' },
-// ];
 
-// function findUser(name: string): User | null {
-//     var user = users.find(user => user.name === name);
-//     if (!user) return null;
-//     else return user;
-// }
-
-// function authenticate(name: string, pass: string, fn: (user: User | null) => void) {
-//     var user = findUser(name);
-//     if (!user) return fn(null);
-//     if (pass === user.password) return fn(user);
-//     fn(null);
-// }
-
-function index(req: Request, res: Response, next: NextFunction): void {
-    try {
-        res.redirect('/login');
-    } catch (error) {
-        next(error);
-    }
-};
-
-class AuthRepository { //console.log로 확인
-    private db = new sqlite.Database(path.join(__dirname, "user.db"));
+class AuthRepository { 
+    private db = new sqlite.Database(path.join(__dirname, "users.db"), (err: any) => {
+        if (err) {
+            console.error(err.message);
+        }
+        console.log('Connected to the users database :)');  //This log appears on terminal(such as Powershell) if db is successfully connected
+    });
 
     constructor(){
         this.createTable();
     }
+
     private createTable(): void{
         this.db.serialize(() => {
             this.db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT)")
@@ -108,28 +86,26 @@ class AuthRepository { //console.log로 확인
         })
     }
 
-    public findUser(name: string, fn:(user: User | null) => void) {
-        this.db.get('SELECT name, password FROM users WHERE name="${name}"', (err: any, row: any) => {
+    public findUser(name: string, fn:(user: User | null) => void) { 
+        this.db.get(`SELECT name, password FROM users WHERE name="${name}"`, (err: any, row: any) => {
             if (!row){
                 fn(null);
             } else {
                 fn({"name": row.name, "password": row.password});
             }
         })
-    }
-    //private db 때문에 여기에 ADD USER 
-    public registerUser(req: Request, res: Response, next: NextFunction) { //this is for making a new account where new username and password are pushed into the users array
-        try {
-            if (!req.session.user){ //로그인이 안되어있으면 
-                // user.push({name: req.body.nusername, password: req.body.npassword}); // <-- 이 부분을 SQL로 회원가입 정보 입력 
-                res.redirect('/login');
-            } else { //로그인 되어있으면 기본 창으로 
-                res.redirect('/login');
+    } 
+
+    public addUser(name: string, password: string, fn: (user: User | null) => void){
+        this.db.run(`INSERT INTO users (name, password) VALUES ("${name}", "${password}")`, (err: any) => {
+            if (err){
+                fn(null);
+            } else {
+                fn({"name": name, "password": password});
             }
-        } catch (error) {
-            next(error);
-        }
+        })
     }
+    
 }
 
 class AuthService{
@@ -147,7 +123,7 @@ class AuthService{
 class AuthController {
     public authService = new AuthService();
 
-    public index = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public index = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //GET /
         try{
             res.redirect('/login');
         } catch (error) {
@@ -155,7 +131,25 @@ class AuthController {
         }
     };
 
-    public signUp = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /register
+        try {
+            this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, function (user) {
+                if (user) {
+                    req.session.regenerate(function () {
+                        req.session.success = 'Welcome ' + user.name;
+                        res.redirect('/login');
+                    });
+                } else {
+                    req.session.error = 'username already taken!';
+                    res.redirect('back');
+                }
+            });
+        } catch(error){
+            next(error);
+        }
+    };
+
+    public signUp = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //GET /login
         try {
             res.render('login', {loggedin: req.session.user});
         } catch(error){
@@ -163,7 +157,7 @@ class AuthController {
         }
     };
 
-    public logIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public logIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /login
         try {
             await this.authService.authenticate(req.body.username, req.body.password, function (user) {
                 if (user) {
@@ -183,7 +177,7 @@ class AuthController {
         }
     };
 
-    public logOut = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public logOut = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //GET /logout
         try {
             req.session.destroy(function () {
                 res.redirect('/');
@@ -193,7 +187,7 @@ class AuthController {
         }
     };
 
-    public restricted = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public restricted = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //GET /restricted
         try {
             if (req.session.user) {
                 res.render("restricted");
@@ -207,15 +201,15 @@ class AuthController {
         }
     };
 
-    public register = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //get request을 통해서 회원가입 페이지 불러오기?
+    public register = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //GET /register
         try {
-            res.render('register'); //register.ejs로 이동?
+            res.render('register'); 
         } catch (error) {
             next(error);
         }
     };
 
-    public myPosts = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public myPosts = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //GET /myposts
         try {
             if (!req.session.user){
                 res.redirect("login");
@@ -234,31 +228,35 @@ class AuthController {
     };
 }
 
-class App {
-    public app: express.Application;
-    public authController;
+class App { 
+    public app: express.Application; //"app" is the name. Typescript syntax starts with the ":" after which 
+                                     // follows a type. which can be typescript interface, data type, object, etc. In this case
+                                     // it is an attribute called Application in the import called express.
+    public authController; //this is just a declaration
 
-    constructor() {
-        this.app = express();
-        this.authController = new AuthController();
-        this.initializeMiddlewares();
-        this.initializeRoutes();
+    constructor() { //constructor is a function that is called when an object is created from a class
+        this.app = express(); //when an instance of App is made, the express() function is called and the result is stored in the attribute "app"
+        this.authController = new AuthController(); //when an instance of App is made, the instance also contains AuthController, which has functions like index, login, and etc.
+        this.initializeMiddlewares(); 
+        this.initializeRoutes(); 
     }
 
-    public listen(port: number) {
+    public listen(port: number) { 
         this.app.listen(port);
     }
-    private initializeMiddlewares() {
-        this.app.set('view engine', 'ejs');
-        this.app.set('views', path.join(__dirname, 'views'));
 
+    private initializeMiddlewares() { 
+        this.app.set('view engine', 'ejs'); //sets the view engine to ejs
+        this.app.set('views', path.join(__dirname, 'views')); //sets the app's views folder as the name "views"
         this.app.use(express.urlencoded({ extended: false }));
+        
         this.app.use(session({
             resave: false,
             saveUninitialized: false,
             secret: 'asdf!@#$qwer'
         }));
-        this.app.use(function (req: Request, res: Response, next) {
+
+        this.app.use(function (req: Request, res: Response, next) { //this is a middleware. middleware is/are function(s) run between the client request and the server answer. The most common middleware functionality needed are error managing, database interaction, getting info from static files or other resources. To move on the middleware stack, the next callback must be called. 
             var err = req.session.error;
             var msg = req.session.success;
             delete req.session.error;
@@ -270,8 +268,8 @@ class App {
         });
     }
 
-    private initializeRoutes() {
-        this.app.get('/', index);
+    private initializeRoutes() { //app.get() and app.post() methods used here refer to routes and request received by node.js server. app.get() refers to GET request and app.post() referes to POST request
+        this.app.get('/', this.authController.index);
         this.app.get('/login', this.authController.signUp);
         this.app.post('/login', this.authController.logIn);
         this.app.get('/restricted', this.authController.restricted);
@@ -279,7 +277,7 @@ class App {
         this.app.get('/bbs', listBbs);
         this.app.post('/write', writeBbs); 
         this.app.get('/register', this.authController.register);
-        // this.app.post('/register', this.authController.registerUser);
+        this.app.post('/register', this.authController.registerUser);
         this.app.get('/myPosts', this.authController.myPosts);
     }
 }
