@@ -7,11 +7,11 @@ const db = new sqlite3.Database("./stock.db", sqlite3, (err) => {
 });
 
 db.serialize(() => {
-    db.run('CREATE TABLE stock (stock_code TEXT,stock_name TEXT, stock_price TEXT, stock_ud TEXT )');
-    const sql = `INSERT INTO stock (stock_code, stock_name, stock_price, stock_ud) VALUES(?,?,?,?)`;
+    db.run('CREATE TABLE stock (stock_code TEXT,stock_name TEXT, stock_price INT, stock_start INT, stock_high INT, stock_low INT, stock_volume INT)');
+    const sql = `INSERT INTO stock (stock_code, stock_name, stock_price, stock_start , stock_high, stock_low, stock_volume) VALUES(?,?,?,?,?,?,?)`;
     db.run(
         sql,
-        ["005930","삼성전자","58900원","-0.51%"],
+        ["005930","삼성전자",58900,58800,59600,58500,11984658],
         (err)=> {
             if (err) return console.error(err.message);
             console.log("A new row has been created");

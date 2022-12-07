@@ -2,7 +2,7 @@
 const sqlite3 = require("sqlite3").verbose();
 let dbstock= new sqlite3.Database("./stock.db", sqlite3, () => {});
 
-let sql = `INSERT INTO stock (stock_code, stock_name, stock_price, stock_ud) VALUES(?,?,?,?)`;
+let sql = `INSERT INTO stock (stock_code, stock_name, stock_price, stock_start , stock_high, stock_low, stock_volume) VALUES(?,?,?,?,?,?,?)`;
 
 
 function closeDb() {
@@ -10,10 +10,10 @@ function closeDb() {
     dbstock.close();
 }
 
-function addStock(code: string,sname:string,price:string,ud:string) {
+function addStock(code:string,sname:string,price:number,start:number,high:number,low:number,volume:number) {
     dbstock.serialize(() => {
         let dbstock= new sqlite3.Database("./stock.db", sqlite3, () => {});
-        dbstock.run(sql,[code,sname,price,ud],
+        dbstock.run(sql,[code,sname,price,start,high,low,volume],
                 (err:any)=> {
                     if (err) return console.error(err.message);
                     console.log("A new row has been created");
@@ -36,7 +36,6 @@ function readStock() {
 )};
 
 
-addStock("020180","대신정보통신","1530","17.24%");
 readStock();
 
 
