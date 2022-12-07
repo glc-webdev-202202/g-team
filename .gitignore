@@ -2670,4 +2670,7 @@ node_modules/yn/license
 node_modules/yn/package.json
 node_modules/yn/readme.md
 node_modules
-users.db
+1userDB.js
+2updateDB.js
+branch.ts
+readstock.ts
