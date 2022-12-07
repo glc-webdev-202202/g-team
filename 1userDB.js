@@ -7,7 +7,7 @@ const db = new sqlite3.Database("./user.db", sqlite3, (err) => {
 });
 
 db.serialize(() => {
-    //db.run('CREATE TABLE users (first_name TEXT,last_name TEXT, username TEXT, password INT, email TEXT, id INT )');
+    db.run('CREATE TABLE users (first_name TEXT,last_name TEXT, username TEXT, password INT, email TEXT, id INT )');
     const sql = `INSERT INTO users (first_name,last_name, username, password, email, id) VALUES(?,?,?,?,?,?)`;
     db.run(
         sql,

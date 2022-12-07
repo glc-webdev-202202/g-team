@@ -22,4 +22,7 @@ npm i ejs
 Powershell 관리자 모드로 실행, 하단 명령어 입력후 YES선택, 
 설정후 향후 보안이 취약해질 수 있으니 N으로 다시 설정 권장
 
-set-executionpolicy remotesigned     
+set-executionpolicy remotesigned  
+
+[프로그램실행]
+npx nodemon --watch "*.ts" --exec "ts-node" test.ts

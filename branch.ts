@@ -16,7 +16,7 @@ class Article{
         this.title = title;
         this.contents = contents;
     }
-}
+};
 
 const bbs: Article[] = [
     { name: 'tj', title: 'hello', contents: 'nice to meet you' },
@@ -54,6 +54,17 @@ class User {
 
     public constructor(name: string, password: string) {
         this.name = name;
+        this.password = password;
+    }
+}
+
+class Stock {
+    public code: string;
+
+    public password: string;
+
+    public constructor(name: string, password: string) {
+        this.code = code;
         this.password = password;
     }
 }
