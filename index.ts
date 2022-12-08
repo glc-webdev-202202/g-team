@@ -62,13 +62,19 @@ class Stock{
     public stock_code: string;
     public stock_name: string;
     public stock_price: number;
-    public stock_ud: number;
+    public stock_start: number;
+    public stock_high: number;
+    public stock_low: number;
+    public stock_volume: number;
 
-    public constructor(stock_code: string, stock_name: string, stock_price: number, stock_ud: number ){
+    public constructor(stock_code: string, stock_name: string, stock_price: number, stock_start: number, stock_high: number, stock_low: number, stock_volume: number ){
         this.stock_code = stock_code;
         this.stock_name = stock_name;
         this.stock_price = stock_price;
-        this.stock_ud = stock_ud;
+        this.stock_start = stock_start;
+        this.stock_high = stock_high;
+        this.stock_low = stock_low;
+        this.stock_volume = stock_volume;
     }
 }
 
