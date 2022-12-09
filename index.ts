@@ -90,9 +90,9 @@ class Stock{
 class User_Stocks{
     public us_id: number;
     public id: string;
-    public s_code: number;
+    public s_code: string;
 
-    public constructor(us_id: number, id: string, s_code: number){
+    public constructor(us_id: number, id: string, s_code: string){
         this.us_id = us_id;
         this.id = id;
         this.s_code = s_code;
@@ -137,12 +137,12 @@ class AuthRepository {
             this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)")
             this.db.run("CREATE TABLE IF NOT EXISTS stocks(s_code TEXT PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)")
             this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id AUTO_INCREMENT INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
-            // this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER AUTO_INCREMENT PRIMARY KEY, id TEXT, s_code INTEGER, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stocks(s_code)")
+            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER AUTO_INCREMENT PRIMARY KEY, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stocks(s_code)")
             // this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)");
             this.db.run("INSERT INTO users (uid, pw) VALUES ('tj', 'foobar')")
             this.db.run("INSERT INTO stocks(s_code, s_name, s_price, s_start, s_high, s_low, s_vol) VALUES ('0','AAA',0,0,0,0,0)")
             this.db.run("INSERT INTO articles (a_id, a_title, a_content, a_secret) VALUES (0, 'a','b',TRUE)") //False-> 콘솔에 0으로 출력, True-> 1
-            // this.db.run("INSERT INTO user_stocks(us_id, id, s_code) VALUES (0, 'tj', 0))")
+            this.db.run("INSERT INTO user_stocks(us_id, id, s_code) VALUES (0, 'tj', '000000'))")
             // this.db.run("INSERT INTO user_articles(ua_id, id, a_id) VALUES (0, 'tj', 0))")
         })
     }
@@ -174,9 +174,9 @@ class AuthRepository {
         this.db.get(`SELECT * FROM articles`, (err: any, info: any) =>{
         console.log(err, info)
     });
-    //     this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
-    //     console.log(err, info)
-    // });
+        this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
+        console.log(err, info)
+    });
     //     this.db.get(`SELECT * FROM user_articles`, (err: any, info: any) =>{
     //     console.log(err, info)
     // });
