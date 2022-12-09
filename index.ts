@@ -48,7 +48,7 @@ function writeForum(req: Request, res: Response, next: NextFunction) {
 }
 
 class User {
-    public uid: string;
+    public uid: string;  
     public pw: string;
     public firstname: string;
     public lastname: string;
@@ -64,22 +64,46 @@ class User {
 }
 
 class Stock{
-    public stock_code: string;
-    public stock_name: string;
-    public stock_price: number;
-    public stock_start: number;
-    public stock_high: number;
-    public stock_low: number;
-    public stock_volume: number;
+    public s_code: string;
+    public s_name: string;
+    public s_price: number;
+    public s_start: number;
+    public s_high: number;
+    public s_low: number;
+    public s_vol: number;
 
-    public constructor(stock_code: string, stock_name: string, stock_price: number, stock_start: number, stock_high: number, stock_low: number, stock_volume: number ){
-        this.stock_code = stock_code;
-        this.stock_name = stock_name;
-        this.stock_price = stock_price;
-        this.stock_start = stock_start;
-        this.stock_high = stock_high;
-        this.stock_low = stock_low;
-        this.stock_volume = stock_volume;
+    public constructor(s_code: string, s_name: string, s_price: number, s_start: number, s_high: number, s_low: number, s_vol: number ){
+        this.s_code = s_code;
+        this.s_name = s_name;
+        this.s_price = s_price;
+        this.s_start = s_start;
+        this.s_high = s_high;
+        this.s_low = s_low;
+        this.s_vol = s_vol;
+    }
+}
+
+class User_Stocks{
+    public us_id: number;
+    public id: string;
+    public s_code: number;
+
+    public constructor(us_id: number, id: string, s_code: number){
+        this.us_id = us_id;
+        this.id = id;
+        this.s_code = s_code;
+    }
+}
+
+class User_Articles{
+    public ua_id: number;
+    public id: string;
+    public a_id: number;
+
+    public constructor(ua_id: number, id: string, a_id: number){
+        this.ua_id = ua_id;
+        this.id = id;
+        this.a_id = a_id;
     }
 }
 
@@ -106,12 +130,16 @@ class AuthRepository {
 
     private createTable(): void{
         this.db.serialize(() => {
-            this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)");
-            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY, id TEXT, s_code INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (s_code) REFERENCES stocks (s_code)");
-            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)");
-            this.db.run("CREATE TABLE IF NOT EXISTS stocks (s_code INTEGER PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)");
-            this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
-            // this.db.run("INSERT INTO users (uid, pw) VALUES ('tj', 'foobar')")
+            this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)")
+            this.db.run("CREATE TABLE IF NOT EXISTS stocks(s_code TEXT PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)")
+            this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id AUTO_INCREMENT INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
+            // this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER AUTO_INCREMENT PRIMARY KEY, id TEXT, s_code INTEGER, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stocks(s_code)")
+            // this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)");
+            this.db.run("INSERT INTO users (uid, pw) VALUES ('tj', 'foobar')")
+            this.db.run("INSERT INTO stocks(s_code, s_name, s_price, s_start, s_high, s_low, s_vol) VALUES ('0','AAA',0,0,0,0,0)")
+            this.db.run("INSERT INTO articles (a_id, a_title, a_content, a_secret) VALUES (0, 'a','b',TRUE)") //False-> 콘솔에 0으로 출력, True-> 1
+            // this.db.run("INSERT INTO user_stocks(us_id, id, s_code) VALUES (0, 'tj', 0))")
+            // this.db.run("INSERT INTO user_articles(ua_id, id, a_id) VALUES (0, 'tj', 0))")
         })
     }
 
@@ -133,8 +161,20 @@ class AuthRepository {
                 fn({"uid": uid, "pw": pw, "firstname": firstname, "lastname": lastname, "email": email});
             }
         })
-        this.db.all(`SELECT * FROM users`, (err: any, info: any) =>{
+        this.db.get(`SELECT * FROM users`, (err: any, info: any) =>{
             console.log(err, info)
+    });
+        this.db.get(`SELECT * FROM stocks`, (err: any, info: any) =>{
+        console.log(err, info)
+    });
+    //     this.db.get(`SELECT * FROM articles`, (err: any, info: any) =>{
+    //     console.log(err, info)
+    // });
+        this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
+        console.log(err, info)
+    });
+        this.db.get(`SELECT * FROM user_articles`, (err: any, info: any) =>{
+        console.log(err, info)
     });
     }
     
