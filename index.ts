@@ -38,7 +38,7 @@ function writeForum(req: Request, res: Response, next: NextFunction) {
         if (!req.session.user){
             res.redirect("login"); 
         } else {
-            forum.push({name: req.session.user.name, title: req.body.title, contents: req.body.contents});
+            forum.push({name: req.session.user.uid, title: req.body.title, contents: req.body.contents});
             res.redirect("/forum");  
         }
     }
@@ -106,12 +106,12 @@ class AuthRepository {
 
     private createTable(): void{
         this.db.serialize(() => {
-            this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)")
-            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY, id TEXT, s_code INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (s_code) REFERENCES stocks (s_code)")
-            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)")
-            this.db.run("CREATE TABLE IF NOT EXISTS stocks (s_code INTEGER PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)")
-            this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)")
-            this.db.run("INSERT INTO users (uid, pw) VALUES ('tj', 'foobar')")
+            this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)");
+            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY, id TEXT, s_code INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (s_code) REFERENCES stocks (s_code)");
+            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)");
+            this.db.run("CREATE TABLE IF NOT EXISTS stocks (s_code INTEGER PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)");
+            this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
+            // this.db.run("INSERT INTO users (uid, pw) VALUES ('tj', 'foobar')")
         })
     }
 
@@ -163,41 +163,23 @@ class AuthController {
         }
     };
 
-    // public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /register
-    //     try {
-    //         this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, function (user) {
-    //             if (user) {
-    //                 req.session.regenerate(function () {
-    //                     req.session.success = 'Welcome ' + user.name;
-    //                     res.redirect('/login');
-    //                 });
-    //             } else {
-    //                 req.session.error = 'username already taken!';
-    //                 res.redirect('back');
-    //             }
-    //         });
-    //     } catch(error){
-    //         next(error);
-    //     }
-    // };
-
-        public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /register
-        try {
-            this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, req.body.nfirstname, req.body.nlastname, req.body.nemail, function (user) {
-                if (user) {
-                    req.session.regenerate(function () {
-                        req.session.success = 'Welcome ' + user.uid;
-                        res.redirect('/login');
-                    });
-                } else {
-                    req.session.error = 'Username already taken!';
-                    res.redirect('back');
-                }
-            });
-        } catch(error){
-            next(error);
-        }
-    };
+    public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //POST /register
+    try {
+        this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, req.body.nfirstname, req.body.nlastname, req.body.nemail, function (user) {
+            if (user) {
+                req.session.regenerate(function () {
+                    req.session.success = 'Welcome ' + user.uid;
+                    res.redirect('/login');
+                });
+            } else {
+                req.session.error = 'Username already taken!';
+                res.redirect('back');
+            }
+        });
+    } catch(error){
+        next(error);
+    }
+};
 
     public signUp = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //GET /login
         try {
@@ -265,7 +247,7 @@ class AuthController {
                 res.redirect("login");
             } else {
                 var myPosts = forum.filter(function (post) {
-                    return post.name === req.session.user?.name;
+                    return post.name === req.session.user?.uid;
                 });
                 res.render('myposts', {
                     list: myPosts,
