@@ -129,6 +129,9 @@ class AuthRepository {
                 fn({"name": name, "password": password, "firstname": firstname, "lastname": lastname, "email": email});
             }
         })
+        this.db.all(`SELECT * FROM users`, (err: any, info: any) =>{
+            console.log(err, info)
+    });
     }
     
 }
