@@ -8,21 +8,25 @@ const sqlite = require('sqlite3').verbose(); //이 명령문이 있어야 sqlite
 class Article{
     public name: string;
 
-    public title: string;
-    public contents: string;
+    public a_id: number;
+    public a_title: string;
+    public a_content: string;
+    public a_secret: boolean;
 
-    public constructor(name: string, title: string, contents: string){
+    public constructor(name: string, a_id: number, a_title: string, a_content: string, a_secret: boolean){ //a_id, a_title, a_content, a_secret
         this.name = name;
-        this.title = title;
-        this.contents = contents;
+        this.a_id = a_id;
+        this.a_title = a_title;
+        this.a_content = a_content;
+        this.a_secret = a_secret;
     }
 }
 
 const forum: Article[] = [
-    { name: 'tj', title: 'hello', contents: 'nice to meet you' },
-    { name: 'bj', title: 'I\'m new here', contents: 'yoroshiku' },
-    { name: 'tj', title: 'here again!', contents: 'anybody here?' },
-    { name: 'ts', title: 'rich people', contents: 'money ain\'t an issue' },
+    { name: 'tj', a_id: 0, a_title: 'hello', a_content: 'nice to meet you', a_secret: false },
+    { name: 'bj', a_id: 1, a_title: 'I\'m new here', a_content: 'yoroshiku', a_secret: false },
+    { name: 'tj', a_id: 2, a_title: 'here again!', a_content: 'anybody here?', a_secret: false },
+    { name: 'ts', a_id: 3, a_title: 'rich people', a_content: 'money ain\'t an issue', a_secret: false }
 ];
 
 function listForum(req: Request, res: Response, next: NextFunction): void{
@@ -38,7 +42,7 @@ function writeForum(req: Request, res: Response, next: NextFunction) {
         if (!req.session.user){
             res.redirect("login"); 
         } else {
-            forum.push({name: req.session.user.uid, title: req.body.title, contents: req.body.contents});
+            forum.push({name: req.session.user.uid, a_id: req.body.a_id, a_title: req.body.a_title, a_content: req.body.a_content, a_secret: req.body.a_secret});
             res.redirect("/forum");  
         }
     }
@@ -167,15 +171,15 @@ class AuthRepository {
         this.db.get(`SELECT * FROM stocks`, (err: any, info: any) =>{
         console.log(err, info)
     });
-    //     this.db.get(`SELECT * FROM articles`, (err: any, info: any) =>{
+        this.db.get(`SELECT * FROM articles`, (err: any, info: any) =>{
+        console.log(err, info)
+    });
+    //     this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
     //     console.log(err, info)
     // });
-        this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
-        console.log(err, info)
-    });
-        this.db.get(`SELECT * FROM user_articles`, (err: any, info: any) =>{
-        console.log(err, info)
-    });
+    //     this.db.get(`SELECT * FROM user_articles`, (err: any, info: any) =>{
+    //     console.log(err, info)
+    // });
     }
     
 }
