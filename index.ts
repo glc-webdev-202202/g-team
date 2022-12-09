@@ -49,12 +49,17 @@ function writeForum(req: Request, res: Response, next: NextFunction) {
 
 class User {
     public name: string;
-
     public password: string;
+    public firstname: string;
+    public lastname: string;
+    public email: string;
 
-    public constructor(name: string, password: string) {
+    public constructor(name: string, password: string, firstname: string, lastname: string, email: string) {
         this.name = name;
         this.password = password;
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.email = email;
     }
 }
 
@@ -111,26 +116,17 @@ class AuthRepository {
             if (!row){
                 fn(null);
             } else {
-                fn({"name": row.name, "password": row.password});
+                fn({"name": row.name, "password": row.password, "firstname": row.firstname, "lastname": row.lastname, "email": row.email});
             }
         })
     } 
 
-    // public addUser(name: string, password: string, fn: (user: User | null) => void){
-    //     this.db.run(`INSERT INTO users (name, password) VALUES ("${name}", "${password}")`, (err: any) => {
-    //         if (err){
-    //             fn(null);
-    //         } else {
-    //             fn({"name": name, "password": password});
-    //         }
-    //     })
-    // }
     public addUser(name: string, password: string, firstname: string, lastname: string, email: string, fn: (user: User | null) => void){
         this.db.run(`INSERT INTO users (name, password, firstname, lastname, email) VALUES ("${name}", "${password}", "${firstname}", "${lastname}", "${email}")`, (err: any) => {
             if (err){
                 fn(null);
             } else {
-                fn({"name": name, "password": password});
+                fn({"name": name, "password": password, "firstname": firstname, "lastname": lastname, "email": email});
             }
         })
     }
