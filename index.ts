@@ -48,15 +48,15 @@ function writeForum(req: Request, res: Response, next: NextFunction) {
 }
 
 class User {
-    public name: string;
-    public password: string;
+    public uid: string;
+    public pw: string;
     public firstname: string;
     public lastname: string;
     public email: string;
 
-    public constructor(name: string, password: string, firstname: string, lastname: string, email: string) {
-        this.name = name;
-        this.password = password;
+    public constructor(uid: string, pw: string, firstname: string, lastname: string, email: string) {
+        this.uid = uid;
+        this.pw = pw;
         this.firstname = firstname;
         this.lastname = lastname;
         this.email = email;
@@ -106,27 +106,31 @@ class AuthRepository {
 
     private createTable(): void{
         this.db.serialize(() => {
-            this.db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, password TEXT, firstname TEXT, lastname TEXT, email TEXT)")
-            this.db.run("INSERT INTO users (name, password) VALUES ('tj', 'foobar')")
+            this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)")
+            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY, id TEXT, s_code INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (s_code) REFERENCES stocks (s_code)")
+            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)")
+            this.db.run("CREATE TABLE IF NOT EXISTS stocks (s_code INTEGER PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)")
+            this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)")
+            this.db.run("INSERT INTO users (uid, pw) VALUES ('tj', 'foobar')")
         })
     }
 
     public findUser(name: string, fn:(user: User | null) => void) { 
-        this.db.get(`SELECT name, password FROM users WHERE name="${name}"`, (err: any, row: any) => {
+        this.db.get(`SELECT uid, pw FROM users WHERE name="${name}"`, (err: any, row: any) => {
             if (!row){
                 fn(null);
             } else {
-                fn({"name": row.name, "password": row.password, "firstname": row.firstname, "lastname": row.lastname, "email": row.email});
+                fn({"uid": row.name, "pw": row.pw, "firstname": row.firstname, "lastname": row.lastname, "email": row.email});
             }
         })
     } 
 
-    public addUser(name: string, password: string, firstname: string, lastname: string, email: string, fn: (user: User | null) => void){
-        this.db.run(`INSERT INTO users (name, password, firstname, lastname, email) VALUES ("${name}", "${password}", "${firstname}", "${lastname}", "${email}")`, (err: any) => {
+    public addUser(uid: string, pw: string, firstname: string, lastname: string, email: string, fn: (user: User | null) => void){
+        this.db.run(`INSERT INTO users (uid, pw, firstname, lastname, email) VALUES ("${uid}", "${pw}", "${firstname}", "${lastname}", "${email}")`, (err: any) => {
             if (err){
                 fn(null);
             } else {
-                fn({"name": name, "password": password, "firstname": firstname, "lastname": lastname, "email": email});
+                fn({"uid": uid, "pw": pw, "firstname": firstname, "lastname": lastname, "email": email});
             }
         })
         this.db.all(`SELECT * FROM users`, (err: any, info: any) =>{
@@ -142,7 +146,7 @@ class AuthService{
     public async authenticate(name: string, pass: string, fn: (user: User | null) => void){
         this.authRepository.findUser(name, (user) => {
             if (!user) return fn(null);
-            if (pass === user.password) return fn(user);
+            if (pass === user.pw) return fn(user);
             fn(null);
         });
     }
@@ -182,7 +186,7 @@ class AuthController {
             this.authService.authRepository.addUser(req.body.nusername, req.body.npassword, req.body.nfirstname, req.body.nlastname, req.body.nemail, function (user) {
                 if (user) {
                     req.session.regenerate(function () {
-                        req.session.success = 'Welcome ' + user.name;
+                        req.session.success = 'Welcome ' + user.uid;
                         res.redirect('/login');
                     });
                 } else {
@@ -209,7 +213,7 @@ class AuthController {
                 if (user) {
                     req.session.regenerate(function () {
                         req.session.user = user;
-                        req.session.success = 'username: ' + user.name;
+                        req.session.success = 'username: ' + user.uid;
                         res.redirect('back');
                     });
                 } else {
