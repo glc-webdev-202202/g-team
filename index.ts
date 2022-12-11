@@ -134,17 +134,39 @@ class AuthRepository {
 
     private createTable(): void{
         this.db.serialize(() => {
-            this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)")
-            this.db.run("CREATE TABLE IF NOT EXISTS stocks(s_code TEXT PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)")
-            this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id AUTO_INCREMENT INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
-            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER AUTO_INCREMENT PRIMARY KEY, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stocks(s_code)")
-            // this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)");
-            this.db.run("INSERT INTO users (uid, pw) VALUES ('tj', 'foobar')")
-            this.db.run("INSERT INTO stocks(s_code, s_name, s_price, s_start, s_high, s_low, s_vol) VALUES ('0','AAA',0,0,0,0,0)")
-            this.db.run("INSERT INTO articles (a_id, a_title, a_content, a_secret) VALUES (0, 'a','b',TRUE)") //False-> 콘솔에 0으로 출력, True-> 1
-            this.db.run("INSERT INTO user_stocks(us_id, id, s_code) VALUES (0, 'tj', '000000'))")
-            // this.db.run("INSERT INTO user_articles(ua_id, id, a_id) VALUES (0, 'tj', 0))")
-        })
+            this.db.run("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, pw TEXT, firstname TEXT, lastname TEXT, email TEXT)");
+            this.db.run("CREATE TABLE IF NOT EXISTS stocks(s_code TEXT PRIMARY KEY, s_name TEXT, s_price INTEGER, s_start INTEGER, s_high INTEGER, s_low INTEGER, s_vol INTEGER)");
+            this.db.run("CREATE TABLE IF NOT EXISTS articles (a_id INTEGER PRIMARY KEY AUTOINCREMENT, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
+            // this.db.close((err: any) => {if (err) return console.error(err.message);});
+            // this.db.run("INSERT INTO users (uid, pw, firstname, lastname, email) VALUES ('tj', 'foobar','aa','aa','aa')");
+            // this.db.run("INSERT INTO stocks(s_code, s_name, s_price, s_start, s_high, s_low, s_vol) VALUES ('00000','AAA',0,0,0,0,0)");
+            // this.db.run("INSERT INTO articles(a_title, a_content, a_secret) VALUES ('a','b',TRUE)");
+            // this.db.get(`SELECT * FROM stocks`);
+            // this.db.get(`SELECT * FROM users`);
+            // this.db.get(`SELECT * FROM articles`);
+            // this.db.close((err: any) => {if (err) return console.error(err.message);});
+            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stocks(s_code)");
+            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users (uid), FOREIGN KEY (a_id) REFERENCES articles (a_id)");
+            this.db.close((err: any) => {if (err) return console.error(err.message);});
+        //     this.db.run("INSERT INTO user_stocks(us_id, id, s_code) VALUES (0, 'tj', '000000')");
+        //     this.db.run("INSERT INTO user_articles(ua_id, id, a_id) VALUES (0, 'tj', 0)");
+
+        //     this.db.get(`SELECT * FROM users`, (err: any, info: any) =>{
+        //         console.log(err, info)
+        // });
+        //     this.db.get(`SELECT * FROM stocks`, (err: any, info: any) =>{
+        //     console.log(err, info)
+        // });
+        //     this.db.get(`SELECT * FROM articles`, (err: any, info: any) =>{
+        //     console.log(err, info)
+        // });
+        //     this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
+        //     console.log(err, info)
+        // });
+        //     this.db.get(`SELECT * FROM user_articles`, (err: any, info: any) =>{
+        //     console.log(err, info)
+        // });
+        });
     }
 
     public findUser(name: string, fn:(user: User | null) => void) { 
@@ -161,7 +183,8 @@ class AuthRepository {
         this.db.run(`INSERT INTO users (uid, pw, firstname, lastname, email) VALUES ("${uid}", "${pw}", "${firstname}", "${lastname}", "${email}")`, (err: any) => {
             if (err){
                 fn(null);
-            } else {
+            } 
+            else {
                 fn({"uid": uid, "pw": pw, "firstname": firstname, "lastname": lastname, "email": email});
             }
         })
@@ -174,9 +197,9 @@ class AuthRepository {
         this.db.get(`SELECT * FROM articles`, (err: any, info: any) =>{
         console.log(err, info)
     });
-        this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
-        console.log(err, info)
-    });
+    //     this.db.get(`SELECT * FROM user_stocks`, (err: any, info: any) =>{
+    //     console.log(err, info)
+    // });
     //     this.db.get(`SELECT * FROM user_articles`, (err: any, info: any) =>{
     //     console.log(err, info)
     // });
@@ -358,6 +381,9 @@ class App {
         // this.app.get('/stocklist', );
     }
 }
+
+
+
 
 const app = new App();
 
