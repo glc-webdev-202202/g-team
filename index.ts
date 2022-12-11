@@ -116,18 +116,24 @@ class AuthRepository{
         });
     }
 
-    public allStocks(callback:any){
+    public allstock_data(callback:any){
         this.db.all("SELECT * FROM stock", function(err:any, row:any){
             callback(row);
         });
     }
 
-    public allStocks_rank(callback:any){
-        this.dbrank.all("SELECT * FROM agency_data", function(err:any, row:any){
+    public agency_data(callback:any){
+        this.dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
             callback(row);
         });
     }
-
+    
+    public foreigner_data(callback:any){
+        this.dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
+            callback(row);
+        });
+    }
+ 
     public addArticle(a_title: string, a_content: string, a_secret: boolean, fn: (articles: Article | null) => void){
         this.db.run(`INSERT INTO articles (a_title, a_content, a_secret) VALUES ("${a_title}", "${a_content}", "${a_secret}")`, (err: any) => {
             if (err){
@@ -163,39 +169,49 @@ class AuthController{
 
     public index = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
-            res.redirect('/g_stock');
+            res.redirect('/allstock_data');
         } catch (error) {
             next(error);
         }
     };
 
-    public mainPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+    public allstock_dataPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
-            this.authService.authRepository.allStocks(function(result:any){
-                res.render('g_stock', {loggedin: req.session.user, stocks: result});
+            this.authService.authRepository.allstock_data(function(result:any){
+                res.render('allstock_data', {loggedin: req.session.user, stocks: result});
             });
         } catch (error) {
             next(error);
         }
     };
 
-    public rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+    public agency_rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
-            this.authService.authRepository.allStocks_rank(function(result:any){
-                res.render('stock_rank', {loggedin: req.session.user, stocks: result});
+            this.authService.authRepository.agency_data(function(result:any){
+                res.render('agency_rank', {loggedin: req.session.user, stocks: result});
             });
         } catch (error) {
             next(error);
         }
     };
 
+    public foreigner_rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+        try {
+            this.authService.authRepository.foreigner_data(function(result:any){
+                res.render('foreigner_rank', {loggedin: req.session.user, stocks: result});
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+    
     public register = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             res.render('register');
         } catch (error) {
             next(error);
         }
-    }
+    };
 
     public registerUser = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -339,8 +355,9 @@ class App {
 
     private initializeRoutes(){
         this.app.get('/', this.authController.index);
-        this.app.get('/g_stock', this.authController.mainPage);
-        this.app.get('/stock_rank', this.authController.rankPage);
+        this.app.get('/allstock_data', this.authController.allstock_dataPage);
+        this.app.get('/agency_rank', this.authController.agency_rankPage);
+        this.app.get('/foreigner_rank', this.authController.foreigner_rankPage);
         this.app.get('/register', this.authController.register);
         this.app.post('/registerUser', this.authController.registerUser);
         this.app.get('/login', this.authController.login);
