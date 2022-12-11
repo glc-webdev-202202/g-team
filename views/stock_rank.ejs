@@ -55,13 +55,13 @@
             <tbody>
                 <% for(const stock of stocks){ %> <!-- [const name].[*DATABASE COLUMN NAME*, not the name in index.ts] -->
                 <tr>
-                    <td><%= stock.Ticker %></td>
-                    <td><%= stock.Name %></td>
-                    <td><%= stock.20221209 %></td>
-                    <td><%= stock.20221208 %></td>
-                    <td><%= stock.20221207 %></td>
-                    <td><%= stock.20221206 %></td>
-                    <td><%= stock.20221205 %></td>
+                    <td><%= stock.code %></td>
+                    <td><%= stock.name %></td>
+                    <td><%= stock.d %></td>
+                    <td><%= stock.d1 %></td>
+                    <td><%= stock.d2 %></td>
+                    <td><%= stock.d3 %></td>
+                    <td><%= stock.d4 %></td>
                 </tr>
                 <% } %>
             </tbody>

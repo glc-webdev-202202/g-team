@@ -123,7 +123,7 @@ class AuthRepository{
     }
 
     public allStocks_rank(callback:any){
-        this.dbrank.all("SELECT * FROM agency_date", function(err:any, row:any){
+        this.dbrank.all("SELECT * FROM agency_data", function(err:any, row:any){
             callback(row);
         });
     }
