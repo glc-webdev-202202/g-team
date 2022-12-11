@@ -66,9 +66,15 @@ class AuthRepository{
         if (err) {
           console.error(err.message);
         }
-        console.log('Connected to database. :)');
+        console.log('Connected to stock database. :)');
     });
 
+    private dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
+        if (err) {
+          console.error(err.message);
+        }
+        console.log('Connected to stock_supply database. :)');
+    });
     constructor(){
         this.createTable();
     }
@@ -112,6 +118,12 @@ class AuthRepository{
 
     public allStocks(callback:any){
         this.db.all("SELECT * FROM stock", function(err:any, row:any){
+            callback(row);
+        });
+    }
+
+    public allStocks_rank(callback:any){
+        this.dbrank.all("SELECT * FROM agency_date", function(err:any, row:any){
             callback(row);
         });
     }
@@ -161,6 +173,16 @@ class AuthController{
         try {
             this.authService.authRepository.allStocks(function(result:any){
                 res.render('g_stock', {loggedin: req.session.user, stocks: result});
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+        try {
+            this.authService.authRepository.allStocks_rank(function(result:any){
+                res.render('stock_rank', {loggedin: req.session.user, stocks: result});
             });
         } catch (error) {
             next(error);
@@ -318,6 +340,7 @@ class App {
     private initializeRoutes(){
         this.app.get('/', this.authController.index);
         this.app.get('/g_stock', this.authController.mainPage);
+        this.app.get('/stock_rank', this.authController.rankPage);
         this.app.get('/register', this.authController.register);
         this.app.post('/registerUser', this.authController.registerUser);
         this.app.get('/login', this.authController.login);

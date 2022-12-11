@@ -39,29 +39,29 @@
 
 <body>
     <div class="container">
-        <h1><a href="/">Stocks</a></h1>
+        <h1><a href="/">Stock_rank</a></h1>
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Code</th>
                     <th>Name</th>
-                    <th>Price</th>
-                    <th>Start</th>
-                    <th>High</th>
-                    <th>Low</th>
-                    <th>Volume</th>
+                    <th>D</th>
+                    <th>D-1</th>
+                    <th>D-2</th>
+                    <th>D-3</th>
+                    <th>D-4</th>
                 </tr>
             </thead>
             <tbody>
                 <% for(const stock of stocks){ %> <!-- [const name].[*DATABASE COLUMN NAME*, not the name in index.ts] -->
                 <tr>
-                    <td><%= stock.stock_code %></td>
-                    <td><%= stock.stock_name %></td>
-                    <td><%= stock.stock_price %></td>
-                    <td><%= stock.stock_start %></td>
-                    <td><%= stock.stock_high %></td>
-                    <td><%= stock.stock_low %></td>
-                    <td><%= stock.stock_volume %></td>
+                    <td><%= stock.Ticker %></td>
+                    <td><%= stock.Name %></td>
+                    <td><%= stock.20221209 %></td>
+                    <td><%= stock.20221208 %></td>
+                    <td><%= stock.20221207 %></td>
+                    <td><%= stock.20221206 %></td>
+                    <td><%= stock.20221205 %></td>
                 </tr>
                 <% } %>
             </tbody>
