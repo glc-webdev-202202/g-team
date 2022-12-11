@@ -1,9 +1,0 @@
-
-<%- include('head', { title: 'Stock' }) -%>
-
-<h1>Stocks</h1>
-<% for(var stock of slist){ %> 
-    <b><%= stock.scode %></b> <%= stock.sname %> <%= stock.sprice %> <%= stock.sstart %> <%= stock.shigh %> <%= stock.slow %> <%= stock.svolume %> <br>
-<% } %>
-
-<%- include('foot') -%> 

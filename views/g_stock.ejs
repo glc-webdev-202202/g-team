@@ -37,29 +37,31 @@
 
 <body>
     <div class="container">
-        <h1><a href="/forum">Forum</a></h1>
+        <h1><a href="/">Stocks</a></h1>
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Article Id</th>
-                    <th>Title</th>
-                    <th>Content</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Start</th>
+                    <th>High</th>
+                    <th>Low</th>
+                    <th>Volume</th>
                 </tr>
             </thead>
             <tbody>
-                <% for(const article of articles){ %> <!-- [const name].[*DATABASE COLUMN NAME*, not the name in index.ts] -->
+                <% for(const stock of stocks){ %> <!-- [const name].[*DATABASE COLUMN NAME*, not the name in index.ts] -->
                 <tr>
-                    <td><%= article.ua_id %></td>
-                    <td><%= article.a_title %></td>
-                    <td><%= article.a_content %></td>
+                    <td><%= stock.stock_code %></td>
+                    <td><%= stock.stock_name %></td>
+                    <td><%= stock.stock_price %></td>
+                    <td><%= stock.stock_start %></td>
+                    <td><%= stock.stock_high %></td>
+                    <td><%= stock.stock_low %></td>
+                    <td><%= stock.stock_volume %></td>
                 </tr>
                 <% } %>
             </tbody>
         </table>
-        <form method="POST" action="/writePost">  
-            <input type="text" name = "a_title">
-            <input type="text" name = "a_content">
-            <input type="checkbox" name = "a_secret">
-            <button type="submit">submit</button>
-        </form>
     </div>
