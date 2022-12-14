@@ -75,6 +75,7 @@ class AuthRepository{
         }
         console.log('Connected to stock_supply database. :)');
     });
+
     constructor(){
         this.createTable();
     }
@@ -123,13 +124,26 @@ class AuthRepository{
     }
 
     public agency_data(callback:any){
-        this.dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
+        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
+            if (err) {
+              console.error(err.message);
+            }
+            console.log('Connected to stock_supply database. :)');
+        });
+        dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
             callback(row);
         });
     }
     
     public foreigner_data(callback:any){
-        this.dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
+        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
+            if (err) {
+              console.error(err.message);
+            }
+            console.log('Connected to stock_supply database. :)');
+        });
+        
+        dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
             callback(row);
         });
     }
