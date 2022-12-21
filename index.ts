@@ -46,10 +46,20 @@ class Article{
     public a_content: string;
     public a_secret: boolean;
 
-    public constructor(a_title: string, a_content: string, a_secret: boolean){ //a_id는 자동으로 증가하므로 생성자에서는 받지 않음
+    public constructor(a_title: string, a_content: string, a_secret: boolean){ 
         this.a_title = a_title;
         this.a_content = a_content;
         this.a_secret = a_secret;
+    }
+}
+
+class UserStock{
+    public id: string;
+    public s_code: string;
+
+    public constructor(id: string, s_code: string){
+        this.id = id;
+        this.s_code = s_code;
     }
 }
 
@@ -164,11 +174,46 @@ class AuthRepository{
         })
     }
 
-    public allArticles(callback:any){ //forum already exists and to clear confusion changed the name to allArticles
+    public allArticles(callback:any){ //forum already exists and to clear confusion, changed the name to allArticles
         this.db.all("SELECT * FROM articles", function(err:any, row:any){
             callback(row);
         });
     }
+
+    public returnMyArticles(id: string, callback: any){
+        this.db.all(`SELECT a_title, a_content FROM articles WHERE a_id IN (SELECT a_id FROM user_articles WHERE id="${id}")`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+    
+    public addFavStock(id: string, s_code: string, fn: (user_stock: UserStock | null) => void){
+        this.db.run(`INSERT INTO user_stocks (id, s_code) VALUES ("${id}", "${s_code}")`, (err: any) => {
+            if (err){
+                fn(null);
+            } else {
+                fn({"id": id, "s_code": s_code});
+            }
+        })
+    }
+
+    public returnFavStocks(id: string, callback: any){  
+       this.db.all(`SELECT * FROM stock WHERE s_code IN (SELECT s_code FROM user_stocks WHERE id="${id}")`, function(err:any, row:any){
+            callback(row);
+        });        
+    }
+
+    public searchStock(searchVal: string, callback: any){
+        this.db.all(`SELECT * FROM stock WHERE s_name LIKE "%${searchVal}%" OR s_code LIKE "%${searchVal}%"`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+
+    public returnMyPassword(firstname: string, lastname: string, email: string, callback: any){
+        this.db.all(`SELECT pw FROM users WHERE firstname="${firstname}" AND lastname="${lastname}" AND email="${email}"`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+    
     
 }
 
