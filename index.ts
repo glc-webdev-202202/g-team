@@ -127,35 +127,70 @@ class AuthRepository{
         });
     }
 
-    public allstock_data(callback:any){
-        this.db.all("SELECT * FROM stock", function(err:any, row:any){
-            callback(row);
-        });
-    }
-
-    public agency_data(callback:any){
-        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
-            if (err) {
-              console.error(err.message);
+    public allstock_data(callback:any,req: Request, res: Response, next: NextFunction){
+        try {
+            if (!req.session.user){
+                res.redirect("login"); 
+            } else {
+                this.db.all("SELECT * FROM stock", function(err:any, row:any){
+                    callback(row);})
+                 
             }
-            console.log('Connected to stock_supply database. :)');
-        });
-        dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
-            callback(row);
-        });
+        }
+        catch (error){
+            next(error);
+        }
+        
+    }
+        
+        
+
+    public agency_data(callback:any,req: Request, res: Response, next: NextFunction){
+        try {
+            if (!req.session.user){
+                res.redirect("login"); 
+            } else {
+                let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
+                    if (err) {
+                      console.error(err.message);
+                    }
+                    console.log('Connected to stock_supply database. :)');
+                });
+                dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
+                    callback(row);
+                });
+                 
+            }
+        }
+        catch (error){
+            next(error);
+        }
+        
     }
     
-    public foreigner_data(callback:any){
-        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
-            if (err) {
-              console.error(err.message);
+    
+    public foreigner_data(callback:any,req: Request, res: Response, next: NextFunction){
+        try {
+            if (!req.session.user){
+                res.redirect("login"); 
+            } else {
+                let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
+                    if (err) {
+                      console.error(err.message);
+                    }
+                    console.log('Connected to stock_supply database. :)');
+                });
+                
+                dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
+                    callback(row);
+                });
+                 
             }
-            console.log('Connected to stock_supply database. :)');
-        });
+        }
+        catch (error){
+            next(error);
+        }
         
-        dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
-            callback(row);
-        });
     }
  
     public addPost(a_title: string, a_content: string, a_secret: boolean, id: string, fn: (article: Article | null) => void){ //adds article into the articles table AND user_articles table
