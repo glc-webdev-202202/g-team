@@ -121,8 +121,14 @@ class AuthRepository{
         })
     }
 
-    public profileInfo(callback:any){ //return user info
+    public getAllProfile(callback:any){ //return all user info
         this.db.all(`SELECT * FROM users`, function(err: any, row: any) {
+            callback(row);
+        });
+    }
+
+    public getMyProfile(uid: string, callback:any){ 
+        this.db.get(`SELECT uid, firstname, lastname, email FROM users WHERE uid="${uid}"`, function(err: any, row: any) {
             callback(row);
         });
     }
@@ -180,9 +186,25 @@ class AuthRepository{
         });
     }
 
-    public returnMyArticles(id: string, callback: any){
+    public getMyArticles(id: string, callback:any){
         this.db.all(`SELECT a_title, a_content FROM articles WHERE a_id IN (SELECT a_id FROM user_articles WHERE id="${id}")`, function(err:any, row:any){
             callback(row);
+        });
+    }
+
+    public deleteArticle(a_id: number, callback:any){ //delete from articles table AND user_articles table
+        this.db.run(`DELETE FROM articles WHERE a_id="${a_id}"`, (err: any) => {
+            if (err){
+                callback(null);
+            } else {
+                this.db.run(`DELETE FROM user_articles WHERE a_id="${a_id}"`, (err: any) => {
+                    if (err){
+                        callback(null);
+                    } else {
+                        callback({"a_id": a_id});
+                    }
+                });
+            }
         });
     }
     
@@ -196,13 +218,23 @@ class AuthRepository{
         })
     }
 
-    public returnFavStocks(id: string, callback: any){  
+    public removeFavStock(id: string, s_code: string, fn: (user_stock: UserStock | null) => void){
+        this.db.run(`DELETE FROM user_stocks WHERE id="${id}" AND s_code="${s_code}"`, (err: any) => {
+            if (err){
+                fn(null);
+            } else {
+                fn({"id": id, "s_code": s_code});
+            }
+        })
+    }
+
+    public getFavStocks(id: string, callback: any){  
        this.db.all(`SELECT * FROM stock WHERE s_code IN (SELECT s_code FROM user_stocks WHERE id="${id}")`, function(err:any, row:any){
             callback(row);
         });        
     }
 
-    public searchStock(searchVal: string, callback: any){
+    public getSearchStock(searchVal: string, callback: any){
         this.db.all(`SELECT * FROM stock WHERE s_name LIKE "%${searchVal}%" OR s_code LIKE "%${searchVal}%"`, function(err:any, row:any){
             callback(row);
         });
@@ -212,9 +244,9 @@ class AuthRepository{
         this.db.all(`SELECT pw FROM users WHERE firstname="${firstname}" AND lastname="${lastname}" AND email="${email}"`, function(err:any, row:any){
             callback(row);
         });
-    }
+    }    
     
-    
+
 }
 
 class AuthService{
@@ -342,7 +374,7 @@ class AuthController{
 
     public profile = async(req: Request, res: Response, next: NextFunction): Promise<void> => {  
         try {
-            this.authService.authRepository.profileInfo( function(result:any){
+            this.authService.authRepository.getAllProfile( function(result:any){
                 res.render('profile', {loggedin: req.session.user, profiles: result});
             });
         } catch (error) {
@@ -359,6 +391,21 @@ class AuthController{
             next(error);
         }
     };
+
+    public myArticle = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (req.session.user){
+                this.authService.authRepository.getMyArticles(req.session.user.uid, function(result:any){
+                    res.render('myArticle', {loggedin: req.session.user, articles: result});
+                });
+            } else {
+                req.session.error = 'Please login to view your posts';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
 
     public writePost = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -381,8 +428,99 @@ class AuthController{
         }
     }
 
-}
+    public deletePost = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //only matching uid can delete its own post using deleteArticle function
 
+    }
+
+    public favStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const {stock_code} = req.body;
+            if (req.session.user){
+                this.authService.authRepository.addFavStock(stock_code, req.session.user.uid, (user) => {
+                    if (user){
+                        res.redirect('/');
+                    } else {
+                        req.session.error = 'Could not add stock';
+                        res.redirect('/');
+                    }
+                });
+            } else {
+                req.session.error = 'Please login to add favorite stock';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public unfavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //removing stock from user's favorite list
+        try {
+            const {stock_code} = req.body;
+            if (req.session.user){
+                this.authService.authRepository.removeFavStock(stock_code, req.session.user.uid, (user) => {
+                    if (user){
+                        res.redirect('/');
+                    } else {
+                        req.session.error = 'Could not remove stock';
+                        res.redirect('/');
+                    }
+                });
+            } else {
+                req.session.error = 'Please login to remove favorite stock';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public myFavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (req.session.user){
+                this.authService.authRepository.getFavStocks(req.session.user.uid, function(result:any){
+                    res.render('myFavStock', {loggedin: req.session.user, stocks: result});
+                });
+            } else {
+                req.session.error = 'Please login to view your favorite stocks';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public searchStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const {input} = req.body;
+            if (req.session.user){
+                this.authService.authRepository.getSearchStock(input, function(result:any){
+                    res.render('searchStock', {loggedin: req.session.user, stocks: result});
+                });
+            } else {
+                req.session.error = 'Please login to search stock';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public findPassword = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //must match firstname, lastname, and email to return password
+        try {
+            const {firstname, lastname, email} = req.body;
+            this.authService.authRepository.returnMyPassword(firstname, lastname, email, function(result:any){
+                if (result){
+                    res.render('findPassword', {loggedin: req.session.user, password: result});
+                } else {
+                    req.session.error = 'Could not find password';
+                    res.redirect('/findPassword');
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+}
 
 
 class App {
@@ -437,22 +575,12 @@ class App {
         this.app.get('/profile', this.authController.profile);
         this.app.get('/forum', this.authController.forum);
         this.app.post('/writePost', this.authController.writePost);
+        this.app.get('/myArticle', this.authController.myArticle);
+        this.app.get('/findPassword', this.authController.findPassword);
+        this.app.post('/findPassword', this.authController.findPassword);
     }
 }
 
-
-// class search {
-//     private db = new sqlite.Database('stock.db')
-//     public searchStockName = async (stock_name: string, callback: (result: any) => void) => {
-//         this.db.all('SELECT * FROM stock WHERE stock_name = ?', stock_name, (err, result) => {
-//             if (err) {
-//                 console.log(err);
-//             } else {
-//                 callback(result);
-//             }
-//         });
-//     }
-// }
 
 const app = new App();
 
