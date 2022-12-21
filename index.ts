@@ -46,10 +46,20 @@ class Article{
     public a_content: string;
     public a_secret: boolean;
 
-    public constructor(a_title: string, a_content: string, a_secret: boolean){ //a_id는 자동으로 증가하므로 생성자에서는 받지 않음
+    public constructor(a_title: string, a_content: string, a_secret: boolean){ 
         this.a_title = a_title;
         this.a_content = a_content;
         this.a_secret = a_secret;
+    }
+}
+
+class UserStock{
+    public id: string;
+    public s_code: string;
+
+    public constructor(id: string, s_code: string){
+        this.id = id;
+        this.s_code = s_code;
     }
 }
 
@@ -84,10 +94,10 @@ class AuthRepository{
         this.db.serialize(() => {
             // this.db.run("DROP TABLE users")
             // this.db.run("DROP TABLE articles")
-            this.db.run("CREATE TABLE IF NOT EXISTS users(uid varchar(16) PRIMARY KEY, pw TEXT NOT NULL, firstname TEXT, lastname TEXT, email TEXT)")
-            this.db.run("CREATE TABLE IF NOT EXISTS articles(a_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
-            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stock(stock_code))");
-            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users(uid), FOREIGN KEY (a_id) REFERENCES articles (a_id))");
+            this.db.run("CREATE TABLE IF NOT EXISTS users(uid varchar(16) PRIMARY KEY, pw TEXT NOT NULL, firstname TEXT, lastname TEXT, email TEXT)"); //checked SQL document. Auto_Increment and Not Null unnecessary bc it's a primary key and doesn't need manual insert.
+            this.db.run("CREATE TABLE IF NOT EXISTS articles(a_id INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
+            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stock(stock_code))");
+            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users(uid), FOREIGN KEY (a_id) REFERENCES articles (a_id))");
         })
     }
 
@@ -148,21 +158,62 @@ class AuthRepository{
         });
     }
  
-    public addArticle(a_title: string, a_content: string, a_secret: boolean, fn: (articles: Article | null) => void){
+    public addPost(a_title: string, a_content: string, a_secret: boolean, id: string, fn: (article: Article | null) => void){ //adds article into the articles table AND user_articles table
         this.db.run(`INSERT INTO articles (a_title, a_content, a_secret) VALUES ("${a_title}", "${a_content}", "${a_secret}")`, (err: any) => {
             if (err){
                 fn(null);
             } else {
-                fn({"a_title": a_title, "a_content": a_content, "a_secret": a_secret});
+                this.db.run(`INSERT INTO user_articles (id, a_id) VALUES ("${id}", (SELECT MAX(a_id) FROM articles))`, (err: any) => {
+                    if (err){
+                        fn(null);
+                    } else {
+                        fn({"a_title": a_title, "a_content": a_content, "a_secret": a_secret});
+                    }
+                })
             }
         })
     }
 
-    public forum(callback:any){
+    public allArticles(callback:any){ //forum already exists and to clear confusion, changed the name to allArticles
         this.db.all("SELECT * FROM articles", function(err:any, row:any){
             callback(row);
         });
     }
+
+    public returnMyArticles(id: string, callback: any){
+        this.db.all(`SELECT a_title, a_content FROM articles WHERE a_id IN (SELECT a_id FROM user_articles WHERE id="${id}")`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+    
+    public addFavStock(id: string, s_code: string, fn: (user_stock: UserStock | null) => void){
+        this.db.run(`INSERT INTO user_stocks (id, s_code) VALUES ("${id}", "${s_code}")`, (err: any) => {
+            if (err){
+                fn(null);
+            } else {
+                fn({"id": id, "s_code": s_code});
+            }
+        })
+    }
+
+    public returnFavStocks(id: string, callback: any){  
+       this.db.all(`SELECT * FROM stock WHERE s_code IN (SELECT s_code FROM user_stocks WHERE id="${id}")`, function(err:any, row:any){
+            callback(row);
+        });        
+    }
+
+    public searchStock(searchVal: string, callback: any){
+        this.db.all(`SELECT * FROM stock WHERE s_name LIKE "%${searchVal}%" OR s_code LIKE "%${searchVal}%"`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+
+    public returnMyPassword(firstname: string, lastname: string, email: string, callback: any){
+        this.db.all(`SELECT pw FROM users WHERE firstname="${firstname}" AND lastname="${lastname}" AND email="${email}"`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+    
     
 }
 
@@ -299,32 +350,36 @@ class AuthController{
         }
     };
 
-    public writePost = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+    public forum = async(req: Request, res: Response, next: NextFunction): Promise<void> => {  //rendering forum page with data from articles table
         try {
-            const {a_title, a_content, a_secret} = req.body; 
-                this.authService.authRepository.addArticle(a_title, a_content, a_secret, (articles) => {
-                    if (articles){
-                        req.session.success = 'Post added';
-                        res.redirect('/forum');
-                    } else {
-                        req.session.error = 'Post failed';
-                        res.redirect('/forum');
-                    }
-                });
-            } catch (error) {
-            next(error);
-        }
-    };
-
-    public forum = async(req: Request, res: Response, next: NextFunction): Promise<void> => {  
-        try {
-            this.authService.authRepository.forum( function(result:Article){
+            this.authService.authRepository.allArticles(function(result:any){
                 res.render('forum', {loggedin: req.session.user, articles: result});
             });
         } catch (error) {
             next(error);
         }
     };
+
+    public writePost = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const {a_title, a_content, a_secret} = req.body;
+            if (req.session.user){
+                this.authService.authRepository.addPost(a_title, a_content, a_secret, req.session.user.uid, (articles) => {
+                    if (articles){
+                        res.redirect('/forum');
+                    } else {
+                        req.session.error = 'Could not add post';
+                        res.redirect('/forum');
+                    }
+                });
+            } else {
+                req.session.error = 'Please login to submit post';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
 
 }
 
@@ -385,6 +440,19 @@ class App {
     }
 }
 
+
+// class search {
+//     private db = new sqlite.Database('stock.db')
+//     public searchStockName = async (stock_name: string, callback: (result: any) => void) => {
+//         this.db.all('SELECT * FROM stock WHERE stock_name = ?', stock_name, (err, result) => {
+//             if (err) {
+//                 console.log(err);
+//             } else {
+//                 callback(result);
+//             }
+//         });
+//     }
+// }
 
 const app = new App();
 

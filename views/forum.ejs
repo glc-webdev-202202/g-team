@@ -15,7 +15,7 @@
     <div class="container">
         <div class="row">
             <div class="col-md-8"></div>
-            <div class="col-1"><a href="/g_stock">Main</a></div>
+            <div class="col-1"><a href="/allstock_data">Main</a></div>
             <div class="col-1"><a href="/Forum">Forum</a></div>
             <div class="col-1"><a href="/register">Register</a></div>
             <div class="col-1"><a href="/login">Login</a></div> 
@@ -25,7 +25,7 @@
     <div class="container">
         <div class="row">
             <div class="col-md-8"></div>
-            <div class="col-1"><a href="/g_stock">Main</a></div>
+            <div class="col-1"><a href="/allstock_data">Main</a></div>
             <div class="col-1"><a href="/Forum">Forum</a></div>
             <div class="col-1"><a href="/profile">Profile</a></div>
             <div class="col-1"><a href="/logout">Logout</a></div> 
@@ -49,7 +49,7 @@
             <tbody>
                 <% for(const article of articles){ %> <!-- [const name].[*DATABASE COLUMN NAME*, not the name in index.ts] -->
                 <tr>
-                    <td><%= article.ua_id %></td>
+                    <td><%= article.a_id %></td>
                     <td><%= article.a_title %></td>
                     <td><%= article.a_content %></td>
                 </tr>
