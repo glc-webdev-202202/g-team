@@ -235,9 +235,9 @@ class AuthRepository{
         });
     }
 
-    public returnMyPassword(firstname: string, lastname: string, email: string, callback: any){
-        this.db.all(`SELECT pw FROM users WHERE firstname="${firstname}" AND lastname="${lastname}" AND email="${email}"`, function(err:any, row:any){
-            callback(row);
+    public returnMyPassword(firstname: string, lastname: string, email: string, callback:any){
+        this.db.all(`SELECT pw FROM users WHERE firstname="${firstname}" AND lastname="${lastname}" AND email="${email}"`, function(err:any, result:String){
+            callback(result);
         });
     }    
     
@@ -517,7 +517,8 @@ class AuthController{
             const {firstname, lastname, email} = req.body;
             this.authService.authRepository.returnMyPassword(firstname, lastname, email, function(result:any){
                 if (result){
-                    res.render('findPassword', {loggedin: req.session.user, password: result});
+                    res.render('findPassword', {password: result});
+                    req.session.success = 'Your Password: ';
                 } else {
                     req.session.error = 'Could not find password';
                     res.redirect('/findPassword');
