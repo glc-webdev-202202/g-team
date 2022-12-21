@@ -27,46 +27,81 @@
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 <!--===============================================================================================-->
 </head>
+<body style="background-color: #666666;">
+	
+	<div class="limiter">
+		<div class="container-login100">
+			<div class="wrap-login100">
+				<form class="login100-form-signup " method="post" action="/registerUser"> <!-- IMPORTANT. input "name" must be the same as database attribute name!!-->
+					<span class="login100-form-title p-b-43">
+						Sign Up
+					</span>
+					<br>
+					
+					<div class="wrap-input100">
+						<input class="input100" type="text" name="uid" id="uid">
+						<span class="focus-input100"></span>
+						<span class="label-input100">New Username</span>
+					</div>
+					
+					<div class="wrap-input100 validate-input" data-validate="Password is required">
+						<input class="input100" type="password" name="pw" id="pw">
+						<span class="focus-input100"></span>
+						<span class="label-input100"> New Password</span>
+					</div>
 
-<header> 
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8"></div>
-            <div class="col-1"><a href="/g_stock">Main</a></div>
-            <div class="col-1"><a href="/Forum">Forum</a></div>
-            <div class="col-1"><a href="/register">Register</a></div>
-            <div class="col-1"><a href="/login">Login</a></div> 
-        </div>
-    </div>
-</header>
+          <div class="wrap-input100" >
+						<input class="input100" type="text" name="firstname" id="firstname">
+						<span class="focus-input100"></span>
+						<span class="label-input100"> First Name</span>
+					</div> 
 
-<body>
-    <h1>Make an Account</h1>
-    <%- message %>
-<form method="post" action="/registerUser"> <!-- IMPORTANT. input "name" must be the same as database attribute name!!-->
-  <p>
-    <label for="uid">New Username:</label>
-    <input type="text" name="uid" id="uid">
-  </p>
-  <p>
-    <label for="pw">New Password:</label>
-    <input type="text" name="pw" id="pw">
-  </p>
-  <p>
-    <label for="firstname">First Name:</label>
-    <input type="text" name="firstname" id="firstname">
-  </p>
-  <p>
-    <label for="lastname">Last Name:</label>
-    <input type="text" name="lastname" id="lastname">
-  </p>
-  <p>
-    <label for="email">E-mail Address:</label>
-    <input type="text" name="email" id="email">
-  </p>
-  <p>
-    <input type="Submit" value="Submit">
-  </p>
-</form>
+          <div class="wrap-input100">
+						<input class="input100" type="text" name="lastname" id="lastname">
+						<span class="focus-input100"></span>
+						<span class="label-input100"> Last Name</span>
+					</div>
+
+          <div class="wrap-input100 validate-input" data-validate="Email is required">
+						<input class="input100" type="email" name="email" id="email">
+						<span class="focus-input100"></span>
+						<span class="label-input100"> Email</span>
+					</div>
+<br><br><br>
+					<div class="container-login100-form-btn">
+						<button class="login100-form-btn" type="Submit" value="Submit">
+						Sign Up
+						</button>
+					</div>
+					
+				</form>
+
+				<div class="login100-more" style="background-image: url('images/bg-01.jpg');">
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	
+
+	
+	
+<!--===============================================================================================-->
+	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/animsition/js/animsition.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/bootstrap/js/popper.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/select2/select2.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/daterangepicker/moment.min.js"></script>
+	<script src="vendor/daterangepicker/daterangepicker.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/countdowntime/countdowntime.js"></script>
+<!--===============================================================================================-->
+	<script src="js/main.js"></script>
+
 </body>
 </html>
