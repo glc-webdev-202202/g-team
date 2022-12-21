@@ -127,70 +127,35 @@ class AuthRepository{
         });
     }
 
-    public allstock_data(callback:any,req: Request, res: Response, next: NextFunction){
-        try {
-            if (!req.session.user){
-                res.redirect("login"); 
-            } else {
-                this.db.all("SELECT * FROM stock", function(err:any, row:any){
-                    callback(row);})
-                 
-            }
-        }
-        catch (error){
-            next(error);
-        }
-        
+    public allstock_data(callback:any){
+        this.db.all("SELECT * FROM stock", function(err:any, row:any){
+            callback(row);
+        });
     }
-        
-        
 
-    public agency_data(callback:any,req: Request, res: Response, next: NextFunction){
-        try {
-            if (!req.session.user){
-                res.redirect("login"); 
-            } else {
-                let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
-                    if (err) {
-                      console.error(err.message);
-                    }
-                    console.log('Connected to stock_supply database. :)');
-                });
-                dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
-                    callback(row);
-                });
-                 
+    public agency_data(callback:any){
+        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
+            if (err) {
+              console.error(err.message);
             }
-        }
-        catch (error){
-            next(error);
-        }
-        
+            console.log('Connected to stock_supply database. :)');
+        });
+        dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
+            callback(row);
+        });
     }
     
-    
-    public foreigner_data(callback:any,req: Request, res: Response, next: NextFunction){
-        try {
-            if (!req.session.user){
-                res.redirect("login"); 
-            } else {
-                let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
-                    if (err) {
-                      console.error(err.message);
-                    }
-                    console.log('Connected to stock_supply database. :)');
-                });
-                
-                dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
-                    callback(row);
-                });
-                 
+    public foreigner_data(callback:any){
+        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
+            if (err) {
+              console.error(err.message);
             }
-        }
-        catch (error){
-            next(error);
-        }
+            console.log('Connected to stock_supply database. :)');
+        });
         
+        dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
+            callback(row);
+        });
     }
  
     public addPost(a_title: string, a_content: string, a_secret: boolean, id: string, fn: (article: Article | null) => void){ //adds article into the articles table AND user_articles table
@@ -287,23 +252,35 @@ class AuthController{
 
     public agency_rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
-            this.authService.authRepository.agency_data(function(result:any){
-                res.render('agency_rank', {loggedin: req.session.user, stocks: result});
-            });
-        } catch (error) {
+            if (!req.session.user){
+                res.redirect("login"); 
+            } else {
+                this.authService.authRepository.agency_data(function(result:any){
+                    res.render('agency_rank', {loggedin: req.session.user, stocks: result});
+                });
+            }
+        }
+        catch (error){
             next(error);
         }
     };
 
     public foreigner_rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
-            this.authService.authRepository.foreigner_data(function(result:any){
-                res.render('foreigner_rank', {loggedin: req.session.user, stocks: result});
-            });
-        } catch (error) {
+            if (!req.session.user){
+                res.redirect("login"); 
+            } else {
+                this.authService.authRepository.foreigner_data(function(result:any){
+                    res.render('foreigner_rank', {loggedin: req.session.user, stocks: result});
+                });
+            }
+        }
+        catch (error){
             next(error);
         }
     };
+    
+        
     
     public register = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
