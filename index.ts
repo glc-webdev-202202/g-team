@@ -163,7 +163,7 @@ class AuthRepository{
             callback(row);
         });
     }
-
+    
 }
 
 class AuthService{
@@ -329,6 +329,7 @@ class AuthController{
 }
 
 
+
 class App {
     public app: express.Application;
     public authController;
@@ -365,6 +366,7 @@ class App {
             if (msg) res.locals.message = '<p class="msg success">' + msg + '</p>';
             next();
         });
+        this.app.use(express.static(__dirname + '/views'));
     }
 
     private initializeRoutes(){
@@ -380,9 +382,9 @@ class App {
         this.app.get('/profile', this.authController.profile);
         this.app.get('/forum', this.authController.forum);
         this.app.post('/writePost', this.authController.writePost);
-
     }
 }
+
 
 const app = new App();
 
