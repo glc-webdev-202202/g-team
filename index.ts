@@ -403,7 +403,7 @@ class AuthController{
         try {
             if (req.session.user){
                 this.authService.authRepository.getMyArticles(req.session.user.uid, function(result:any){
-                    res.render('myArticle', {loggedin: req.session.user, articles: result});
+                    res.render('myarticles', {loggedin: req.session.user, articles: result});
                 });
             } else {
                 req.session.error = 'Please login to view your posts';
@@ -583,7 +583,7 @@ class App {
         this.app.get('/profile', this.authController.profile);
         this.app.get('/forum', this.authController.forum);
         this.app.post('/writePost', this.authController.writePost);
-        this.app.get('/myArticle', this.authController.myArticle);
+        this.app.get('/myArticles', this.authController.myArticle);
         this.app.get('/findPassword', this.authController.findPassword);
         this.app.post('/findPassword', this.authController.findPassword);
     }
