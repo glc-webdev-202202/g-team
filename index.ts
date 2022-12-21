@@ -530,6 +530,18 @@ class AuthController{
             next(error);
         }
     }
+    public home(req: Request, res: Response, next: NextFunction): void {
+        try {
+            if (req.session.user) {
+                res.render("home");
+            } else {
+                req.session.error = '접근 금지!';
+                res.redirect('/');
+            }
+        } catch (error) {
+            next(error);
+        }
+    };
 }
 
 
@@ -578,6 +590,7 @@ class App {
         this.app.get('/agency_rank', this.authController.agency_rankPage);
         this.app.get('/foreigner_rank', this.authController.foreigner_rankPage);
         this.app.get('/register', this.authController.register);
+        this.app.get('/home', this.authController.home);
         this.app.post('/registerUser', this.authController.registerUser);
         this.app.get('/login', this.authController.login);
         this.app.post('/loginUser', this.authController.loginUser);
