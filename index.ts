@@ -133,12 +133,6 @@ class AuthRepository{
         });
     }
 
-    public getMyProfile(uid: string, callback:any){ 
-        this.db.get(`SELECT uid, firstname, lastname, email FROM users WHERE uid="${uid}"`, function(err: any, row: any) {
-            callback(row);
-        });
-    }
-
     public allstock_data(callback:any,req: Request, res: Response, next: NextFunction){
         try {
             if (!req.session.user){
