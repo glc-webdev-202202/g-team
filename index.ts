@@ -224,8 +224,8 @@ class AuthRepository{
         });
     }
     
-    public getSearchStock(searchVal: string, callback: any){
-        this.db.all(`SELECT * FROM stock WHERE stock_name LIKE "%${searchVal}%" OR stock_code LIKE "%${searchVal}%"`, function(err:any, row:any){
+    public getSearchStock(stock: string, callback: any){ //like stockname or stock code
+        this.db.all(`SELECT * FROM stock WHERE stock_name LIKE "%${stock}%" OR stock_code LIKE "%${stock}%"`, function(err:any, row:any){
             callback(row);
         });
     }
@@ -496,15 +496,15 @@ class AuthController{
 
     public searchStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const {input} = req.body;
-            if (req.session.user){
-                this.authService.authRepository.getSearchStock(input, function(result:any){
-                    res.render('searchStock', {loggedin: req.session.user, stocks: result});
-                });
-            } else {
-                req.session.error = 'Please login to search stock';
-                res.redirect('/login');
-            }
+            const {stock_code} = req.body;
+            this.authService.authRepository.getSearchStock(stock_code, function(result:any){
+                if (result){
+                    res.render('allstock_data', {loggedin: req.session.user, stocks: result});
+                } else {
+                    req.session.error = 'Could not find stock';
+                    res.redirect('/');
+                }
+            });
         } catch (error) {
             next(error);
         }
@@ -601,6 +601,7 @@ class App {
         this.app.get('/favstockspage', this.authController.myFavStock);
         this.app.post('/favStock', this.authController.favStock);
         this.app.post('/unfavStock', this.authController.unfavStock);
+        this.app.get('/search', this.authController.searchStock);
     }
 }
 

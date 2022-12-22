@@ -55,6 +55,12 @@
 <body>
     <div class="container">
         <h1 class="secondt text-center"><a href="/">Stocks</a></h1>
+        <form action="/search" method="get">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Enter stock name" name="stock_name">
+                <button class="btn btn-outline-secondary" type="submit" value="submit">Search</button>
+            </div>
+        </form>
         <table class="table table-striped">
             <thead>
                 <tr>
