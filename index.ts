@@ -68,6 +68,7 @@ declare module 'express-session' {
         user: User;
         error: string;
         success: string;
+        stock: Stock;
     }
 }
 
@@ -94,6 +95,7 @@ class AuthRepository{
         this.db.serialize(() => {
             // this.db.run("DROP TABLE users")
             // this.db.run("DROP TABLE articles")
+            // this.db.run("DROP TABLE user_stocks")
             this.db.run("CREATE TABLE IF NOT EXISTS users(uid varchar(16) PRIMARY KEY, pw TEXT NOT NULL, firstname TEXT, lastname TEXT, email TEXT)"); //checked SQL document. Auto_Increment and Not Null unnecessary bc it's a primary key and doesn't need manual insert.
             this.db.run("CREATE TABLE IF NOT EXISTS articles(a_id INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
             this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stock(stock_code))");
@@ -134,13 +136,7 @@ class AuthRepository{
     }
 
     public agency_data(callback:any){
-        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
-            if (err) {
-              console.error(err.message);
-            }
-            console.log('Connected to stock_supply database. :)');
-        });
-        dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
+        this.dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
             callback(row);
         });
     }
@@ -222,14 +218,14 @@ class AuthRepository{
         })
     }
 
-    public getFavStocks(id: string, callback: any){  
-       this.db.all(`SELECT * FROM stock WHERE s_code IN (SELECT s_code FROM user_stocks WHERE id="${id}")`, function(err:any, row:any){
+    public getFavStocks(uid: string, callback: any){  //cannot iterate error was fixed after changing attribute name from s_code to stock_code etc....
+        this.db.all(`SELECT stock_code, stock_name, stock_price, stock_start, stock_high, stock_low, stock_volume FROM stock INNER JOIN user_stocks ON stock.stock_code=user_stocks.s_code WHERE user_stocks.id="${uid}"`, function(err:any, row:any){
             callback(row);
-        });        
+        });
     }
-
+    
     public getSearchStock(searchVal: string, callback: any){
-        this.db.all(`SELECT * FROM stock WHERE s_name LIKE "%${searchVal}%" OR s_code LIKE "%${searchVal}%"`, function(err:any, row:any){
+        this.db.all(`SELECT * FROM stock WHERE stock_name LIKE "%${searchVal}%" OR stock_code LIKE "%${searchVal}%"`, function(err:any, row:any){
             callback(row);
         });
     }
@@ -391,7 +387,7 @@ class AuthController{
         }
     };
 
-    public forum = async(req: Request, res: Response, next: NextFunction): Promise<void> => {  //rendering forum page with data from articles table
+    public forum = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
             this.authService.authRepository.allArticles(function(result:any){
                 res.render('forum', {loggedin: req.session.user, articles: result});
@@ -445,7 +441,7 @@ class AuthController{
         try {
             const {stock_code} = req.body;
             if (req.session.user){
-                this.authService.authRepository.addFavStock(stock_code, req.session.user.uid, (user) => {
+                this.authService.authRepository.addFavStock(req.session.user.uid, stock_code, (user) => {
                     if (user){
                         res.redirect('/');
                     } else {
@@ -460,15 +456,15 @@ class AuthController{
         } catch (error) {
             next(error);
         }
-    }
+    }      
 
-    public unfavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //removing stock from user's favorite list
+    public unfavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
             const {stock_code} = req.body;
             if (req.session.user){
-                this.authService.authRepository.removeFavStock(stock_code, req.session.user.uid, (user) => {
+                this.authService.authRepository.removeFavStock(req.session.user.uid, stock_code, (user) => {
                     if (user){
-                        res.redirect('/');
+                        res.redirect('/favstockspage');
                     } else {
                         req.session.error = 'Could not remove stock';
                         res.redirect('/');
@@ -483,11 +479,11 @@ class AuthController{
         }
     }
 
-    public myFavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public myFavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //cannot iterate throws
         try {
             if (req.session.user){
                 this.authService.authRepository.getFavStocks(req.session.user.uid, function(result:any){
-                    res.render('myFavStock', {loggedin: req.session.user, stocks: result});
+                    res.render('favstocks', {loggedin: req.session.user, stocks: result});
                 });
             } else {
                 req.session.error = 'Please login to view your favorite stocks';
@@ -530,6 +526,7 @@ class AuthController{
             next(error);
         }
     }
+
     public home(req: Request, res: Response, next: NextFunction): void {
         try {
             if (req.session.user) {
@@ -601,6 +598,9 @@ class App {
         this.app.get('/myArticles', this.authController.myArticle);
         this.app.get('/findPassword', this.authController.findPassword);
         this.app.post('/findPassword', this.authController.findPassword);
+        this.app.get('/favstockspage', this.authController.myFavStock);
+        this.app.post('/favStock', this.authController.favStock);
+        this.app.post('/unfavStock', this.authController.unfavStock);
     }
 }
 
