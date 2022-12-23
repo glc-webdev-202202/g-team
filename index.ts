@@ -46,10 +46,20 @@ class Article{
     public a_content: string;
     public a_secret: boolean;
 
-    public constructor(a_title: string, a_content: string, a_secret: boolean){ //a_id는 자동으로 증가하므로 생성자에서는 받지 않음
+    public constructor(a_title: string, a_content: string, a_secret: boolean){ 
         this.a_title = a_title;
         this.a_content = a_content;
         this.a_secret = a_secret;
+    }
+}
+
+class UserStock{
+    public id: string;
+    public s_code: string;
+
+    public constructor(id: string, s_code: string){
+        this.id = id;
+        this.s_code = s_code;
     }
 }
 
@@ -58,6 +68,7 @@ declare module 'express-session' {
         user: User;
         error: string;
         success: string;
+        stock: Stock;
     }
 }
 
@@ -84,10 +95,11 @@ class AuthRepository{
         this.db.serialize(() => {
             // this.db.run("DROP TABLE users")
             // this.db.run("DROP TABLE articles")
-            this.db.run("CREATE TABLE IF NOT EXISTS users(uid varchar(16) PRIMARY KEY, pw TEXT NOT NULL, firstname TEXT, lastname TEXT, email TEXT)")
-            this.db.run("CREATE TABLE IF NOT EXISTS articles(a_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
-            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stock(stock_code))");
-            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users(uid), FOREIGN KEY (a_id) REFERENCES articles (a_id))");
+            // this.db.run("DROP TABLE user_stocks")
+            this.db.run("CREATE TABLE IF NOT EXISTS users(uid varchar(16) PRIMARY KEY, pw TEXT NOT NULL, firstname TEXT, lastname TEXT, email TEXT)"); //checked SQL document. Auto_Increment and Not Null unnecessary bc it's a primary key and doesn't need manual insert.
+            this.db.run("CREATE TABLE IF NOT EXISTS articles(a_id INTEGER PRIMARY KEY, a_title TEXT, a_content TEXT, a_secret BOOLEAN)");
+            this.db.run("CREATE TABLE IF NOT EXISTS user_stocks (us_id INTEGER PRIMARY KEY, id TEXT, s_code TEXT, FOREIGN KEY(id) REFERENCES users(uid), FOREIGN KEY(s_code) REFERENCES stock(stock_code))");
+            this.db.run("CREATE TABLE IF NOT EXISTS user_articles (ua_id INTEGER PRIMARY KEY, id TEXT, a_id INTEGER, FOREIGN KEY (id) REFERENCES users(uid), FOREIGN KEY (a_id) REFERENCES articles (a_id))");
         })
     }
 
@@ -111,7 +123,7 @@ class AuthRepository{
         })
     }
 
-    public profileInfo(callback:any){ //return user info
+    public getAllProfile(callback:any){ //return all user info
         this.db.all(`SELECT * FROM users`, function(err: any, row: any) {
             callback(row);
         });
@@ -124,16 +136,11 @@ class AuthRepository{
     }
 
     public agency_data(callback:any){
-        let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
-            if (err) {
-              console.error(err.message);
-            }
-            console.log('Connected to stock_supply database. :)');
-        });
-        dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
+        this.dbrank.all("SELECT * FROM agency_data order by cast(d as INTEGER)", function(err:any, row:any){
             callback(row);
         });
     }
+    
     
     public foreigner_data(callback:any){
         let dbrank = new sqlite.Database('stock_supply.db', sqlite.OPEN_READWRITE, (err: any) => {
@@ -142,28 +149,94 @@ class AuthRepository{
             }
             console.log('Connected to stock_supply database. :)');
         });
-        
         dbrank.all("SELECT * FROM foreigner_data order by cast(d as INTEGER)", function(err:any, row:any){
             callback(row);
         });
     }
  
-    public addArticle(a_title: string, a_content: string, a_secret: boolean, fn: (articles: Article | null) => void){
+    public addPost(a_title: string, a_content: string, a_secret: boolean, id: string, fn: (article: Article | null) => void){ //adds article into the articles table AND user_articles table
         this.db.run(`INSERT INTO articles (a_title, a_content, a_secret) VALUES ("${a_title}", "${a_content}", "${a_secret}")`, (err: any) => {
             if (err){
                 fn(null);
             } else {
-                fn({"a_title": a_title, "a_content": a_content, "a_secret": a_secret});
+                this.db.run(`INSERT INTO user_articles (id, a_id) VALUES ("${id}", (SELECT MAX(a_id) FROM articles))`, (err: any) => {
+                    if (err){
+                        fn(null);
+                    } else {
+                        fn({"a_title": a_title, "a_content": a_content, "a_secret": a_secret});
+                    }
+                })
             }
         })
     }
 
-    public forum(callback:any){
+    public allArticles(callback:any){ //forum already exists and to clear confusion, changed the name to allArticles
         this.db.all("SELECT * FROM articles", function(err:any, row:any){
             callback(row);
         });
     }
+
+    public getMyArticles(id: string, callback:any){
+        this.db.all(`SELECT a_title, a_content FROM articles WHERE a_id IN (SELECT a_id FROM user_articles WHERE id="${id}")`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+
+    public deleteArticle(a_id: number, callback:any){ //delete from articles table AND user_articles table
+        this.db.run(`DELETE FROM articles WHERE a_id="${a_id}"`, (err: any) => {
+            if (err){
+                callback(null);
+            } else {
+                this.db.run(`DELETE FROM user_articles WHERE a_id="${a_id}"`, (err: any) => {
+                    if (err){
+                        callback(null);
+                    } else {
+                        callback({"a_id": a_id});
+                    }
+                });
+            }
+        });
+    }
     
+    public addFavStock(id: string, s_code: string, fn: (user_stock: UserStock | null) => void){
+        this.db.run(`INSERT INTO user_stocks (id, s_code) VALUES ("${id}", "${s_code}")`, (err: any) => {
+            if (err){
+                fn(null);
+            } else {
+                fn({"id": id, "s_code": s_code});
+            }
+        })
+    }
+
+    public removeFavStock(id: string, s_code: string, fn: (user_stock: UserStock | null) => void){
+        this.db.run(`DELETE FROM user_stocks WHERE id="${id}" AND s_code="${s_code}"`, (err: any) => {
+            if (err){
+                fn(null);
+            } else {
+                fn({"id": id, "s_code": s_code});
+            }
+        })
+    }
+
+    public getFavStocks(uid: string, callback: any){  //cannot iterate error was fixed after changing attribute name from s_code to stock_code etc....
+        this.db.all(`SELECT stock_code, stock_name, stock_price, stock_start, stock_high, stock_low, stock_volume FROM stock INNER JOIN user_stocks ON stock.stock_code=user_stocks.s_code WHERE user_stocks.id="${uid}"`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+    
+    public getSearchStock(stock: string, callback: any){ //like stockname or stock code
+        this.db.all(`SELECT * FROM stock WHERE stock_name LIKE "%${stock}%" OR stock_code LIKE "%${stock}%"`, function(err:any, row:any){
+            callback(row);
+        });
+    }
+
+    public returnMyPassword(firstname: string, lastname: string, email: string, callback:any){
+        this.db.all(`SELECT pw FROM users WHERE firstname="${firstname}" AND lastname="${lastname}" AND email="${email}"`, function(err:any, result:String){
+            callback(result);
+        });
+    }    
+    
+
 }
 
 class AuthService{
@@ -189,35 +262,50 @@ class AuthController{
         }
     };
 
-    public allstock_dataPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+    public allstock_dataPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            this.authService.authRepository.allstock_data(function(result:any){
-                res.render('allstock_data', {loggedin: req.session.user, stocks: result});
-            });
+            if (req.session.user){
+                this.authService.authRepository.allstock_data(function(result:any){
+                    res.render('allstock_data', {loggedin: req.session.user, stocks: result});
+                });
+            } else {
+                res.redirect('/login');
+            }
         } catch (error) {
             next(error);
         }
-    };
+    }
 
-    public agency_rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+    public agency_rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            this.authService.authRepository.agency_data(function(result:any){
-                res.render('agency_rank', {loggedin: req.session.user, stocks: result});
-            });
-        } catch (error) {
+            if (!req.session.user){
+                res.redirect("login"); 
+            } else {
+                this.authService.authRepository.agency_data(function(result:any){
+                    res.render('agency_rank', {loggedin: req.session.user, stocks: result});
+                });
+            }
+        }
+        catch (error){
             next(error);
         }
     };
 
     public foreigner_rankPage = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
-            this.authService.authRepository.foreigner_data(function(result:any){
-                res.render('foreigner_rank', {loggedin: req.session.user, stocks: result});
-            });
+            if (!req.session.user){
+                res.redirect("login"); 
+            } else {
+                this.authService.authRepository.foreigner_data(function(result:any){
+                    res.render('foreigner_rank', {loggedin: req.session.user, stocks: result});
+                });
+            }
         } catch (error) {
             next(error);
         }
     };
+    
+        
     
     public register = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -291,7 +379,7 @@ class AuthController{
 
     public profile = async(req: Request, res: Response, next: NextFunction): Promise<void> => {  
         try {
-            this.authService.authRepository.profileInfo( function(result:any){
+            this.authService.authRepository.getAllProfile( function(result:any){
                 res.render('profile', {loggedin: req.session.user, profiles: result});
             });
         } catch (error) {
@@ -299,26 +387,9 @@ class AuthController{
         }
     };
 
-    public writePost = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+    public forum = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
         try {
-            const {a_title, a_content, a_secret} = req.body; 
-                this.authService.authRepository.addArticle(a_title, a_content, a_secret, (articles) => {
-                    if (articles){
-                        req.session.success = 'Post added';
-                        res.redirect('/forum');
-                    } else {
-                        req.session.error = 'Post failed';
-                        res.redirect('/forum');
-                    }
-                });
-            } catch (error) {
-            next(error);
-        }
-    };
-
-    public forum = async(req: Request, res: Response, next: NextFunction): Promise<void> => {  
-        try {
-            this.authService.authRepository.forum( function(result:Article){
+            this.authService.authRepository.allArticles(function(result:any){
                 res.render('forum', {loggedin: req.session.user, articles: result});
             });
         } catch (error) {
@@ -326,8 +397,149 @@ class AuthController{
         }
     };
 
-}
+    public myArticle = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            if (req.session.user){
+                this.authService.authRepository.getMyArticles(req.session.user.uid, function(result:any){
+                    res.render('myarticles', {loggedin: req.session.user, articles: result});
+                });
+            } else {
+                req.session.error = 'Please login to view your posts';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
 
+    public writePost = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const {a_title, a_content, a_secret} = req.body;
+            if (req.session.user){
+                this.authService.authRepository.addPost(a_title, a_content, a_secret, req.session.user.uid, (articles) => {
+                    if (articles){
+                        res.redirect('/forum');
+                    } else {
+                        req.session.error = 'Could not add post';
+                        res.redirect('/forum');
+                    }
+                });
+            } else {
+                req.session.error = 'Please login to submit post';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public deletePost = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //only matching uid can delete its own post using deleteArticle function
+
+    }
+
+    public favStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const {stock_code} = req.body;
+            if (req.session.user){
+                this.authService.authRepository.addFavStock(req.session.user.uid, stock_code, (user) => {
+                    if (user){
+                        res.redirect('/');
+                    } else {
+                        req.session.error = 'Could not add stock';
+                        res.redirect('/');
+                    }
+                });
+            } else {
+                req.session.error = 'Please login to add favorite stock';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }      
+
+    public unfavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => { 
+        try {
+            const {stock_code} = req.body;
+            if (req.session.user){
+                this.authService.authRepository.removeFavStock(req.session.user.uid, stock_code, (user) => {
+                    if (user){
+                        res.redirect('/favstockspage');
+                    } else {
+                        req.session.error = 'Could not remove stock';
+                        res.redirect('/');
+                    }
+                });
+            } else {
+                req.session.error = 'Please login to remove favorite stock';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public myFavStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //cannot iterate throws
+        try {
+            if (req.session.user){
+                this.authService.authRepository.getFavStocks(req.session.user.uid, function(result:any){
+                    res.render('favstocks', {loggedin: req.session.user, stocks: result});
+                });
+            } else {
+                req.session.error = 'Please login to view your favorite stocks';
+                res.redirect('/login');
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public searchStock = async(req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const {stock_code} = req.body;
+            this.authService.authRepository.getSearchStock(stock_code, function(result:any){
+                if (result){
+                    res.render('allstock_data', {loggedin: req.session.user, stocks: result});
+                } else {
+                    req.session.error = 'Could not find stock';
+                    res.redirect('/');
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public findPassword = async(req: Request, res: Response, next: NextFunction): Promise<void> => { //must match firstname, lastname, and email to return password
+        try {
+            const {firstname, lastname, email} = req.body;
+            this.authService.authRepository.returnMyPassword(firstname, lastname, email, function(result:any){
+                if (result){
+                    res.render('findPassword', {password: result});
+                    req.session.success = 'Your Password: ';
+                } else {
+                    req.session.error = 'Could not find password';
+                    res.redirect('/findPassword');
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    public home(req: Request, res: Response, next: NextFunction): void {
+        try {
+            if (req.session.user) {
+                res.render("home");
+            } else {
+                req.session.error = '접근 금지!';
+                res.redirect('/');
+            }
+        } catch (error) {
+            next(error);
+        }
+    };
+}
 
 
 class App {
@@ -375,6 +587,7 @@ class App {
         this.app.get('/agency_rank', this.authController.agency_rankPage);
         this.app.get('/foreigner_rank', this.authController.foreigner_rankPage);
         this.app.get('/register', this.authController.register);
+        this.app.get('/home', this.authController.home);
         this.app.post('/registerUser', this.authController.registerUser);
         this.app.get('/login', this.authController.login);
         this.app.post('/loginUser', this.authController.loginUser);
@@ -382,6 +595,13 @@ class App {
         this.app.get('/profile', this.authController.profile);
         this.app.get('/forum', this.authController.forum);
         this.app.post('/writePost', this.authController.writePost);
+        this.app.get('/myArticles', this.authController.myArticle);
+        this.app.get('/findPassword', this.authController.findPassword);
+        this.app.post('/findPassword', this.authController.findPassword);
+        this.app.get('/favstockspage', this.authController.myFavStock);
+        this.app.post('/favStock', this.authController.favStock);
+        this.app.post('/unfavStock', this.authController.unfavStock);
+        this.app.get('/search', this.authController.searchStock);
     }
 }
 

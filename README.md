@@ -25,4 +25,4 @@ Powershell 관리자 모드로 실행, 하단 명령어 입력후 YES선택,
 set-executionpolicy remotesigned  
 
 [프로그램실행]
-npx nodemon --watch "*.ts" --exec "ts-node" test.ts
+npx nodemon --watch "*.ts" --exec "ts-node" index.ts
